@@ -1,0 +1,9 @@
+[project]
+name = "reconcileiq-api"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["fastapi>=0.120,<1", "uvicorn[standard]>=0.38,<1", "reconcileiq-database", "reconcileiq-reconciliation", "kombu>=5.5,<6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,26 @@
+{
+  "name": "reconcileiq",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=22.22.0",
+    "pnpm": ">=12"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @reconcileiq/web dev",
+    "build": "pnpm --filter @reconcileiq/web build",
+    "lint": "pnpm --filter @reconcileiq/web lint",
+    "typecheck": "pnpm --filter @reconcileiq/web typecheck",
+    "test": "pnpm --filter @reconcileiq/web test",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "generate:client": "openapi-typescript packages/contracts/openapi.yaml -o packages/generated/src/schema.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "openapi-typescript": "^7.10.1",
+    "prettier": "^3.6.2"
+  }
+}

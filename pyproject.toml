@@ -1,0 +1,51 @@
+[project]
+name = "reconcileiq"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["services/api", "services/worker", "packages/database", "packages/reconciliation", "packages/ai"]
+
+[tool.uv.sources]
+reconcileiq-database = { workspace = true }
+reconcileiq-reconciliation = { workspace = true }
+reconcileiq-ai = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14,<1",
+    "mypy>=1.18,<2",
+    "pytest>=8.4,<10",
+    "pytest-cov>=6,<8",
+    "httpx>=0.28,<1",
+    "pyyaml>=6,<7",
+    "types-pyyaml>=6,<7",
+    "httpx2>=2.16.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".tools", ".cache", ".venv", "node_modules", "apps/web/node_modules", "apps/web/.next"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["services", "packages/database/src", "packages/reconciliation/src", "packages/ai/src", "scripts", "tests"]
+exclude = ["migrations"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "kombu.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["reconcileiq_reconciliation"]

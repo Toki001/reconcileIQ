@@ -1,0 +1,156 @@
+name: reconcileiq
+
+x-python: &python
+  image: reconcileiq-python:local
+  build:
+    context: .
+    dockerfile: infra/docker/python.Dockerfile
+  init: true
+  environment: &python-env
+    RECONCILE_ENVIRONMENT: local
+    RECONCILE_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?Run make env}:${POSTGRES_PASSWORD:?Run make env}@postgres:5432/${POSTGRES_DB:?Run make env}
+    RECONCILE_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER:?Run make env}:${RABBITMQ_DEFAULT_PASS:?Run make env}@rabbitmq:5672//
+    RECONCILE_MINIO_ENDPOINT: http://minio:9000
+    RECONCILE_INFRASTRUCTURE_REQUIRED: "true"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Run make env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make env}
+      POSTGRES_DB: ${POSTGRES_DB:?Run make env}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-15432}:5432"]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Run make env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Run make env}
+    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  minio:
+    image: reconcileiq-minio:local
+    build:
+      context: .
+      dockerfile: infra/docker/minio.Dockerfile
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Run make env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Run make env}
+    ports:
+      [
+        "127.0.0.1:${MINIO_PORT:-9100}:9000",
+        "127.0.0.1:${MINIO_CONSOLE_PORT:-9101}:9001",
+      ]
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *python
+    command:
+      [
+        "sh",
+        "-c",
+        "python -m alembic upgrade head && python -m reconcileiq_database.seed",
+      ]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    <<: *python
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      rabbitmq: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=8)",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    <<: *python
+    command:
+      [
+        "celery",
+        "-A",
+        "reconcileiq_worker.app:celery_app",
+        "worker",
+        "--loglevel=WARNING",
+        "--concurrency=1",
+      ]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "celery -A reconcileiq_worker.app:celery_app inspect ping --destination celery@$${HOSTNAME} --timeout 5",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    image: reconcileiq-web:local
+    init: true
+    environment:
+      API_BASE_URL: http://api:8000
+    ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  minio-data:

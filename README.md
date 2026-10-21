@@ -1,0 +1,89 @@
+# ReconcileIQ
+
+An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
+
+**Milestone 01** is a working local, single-workspace demo using synthetic records. It includes Overview, Invoices, Purchase Orders, Reconciliation, Exceptions and Audit Log pages, with search, status filters and record details. The UI reads persisted data through an OpenAPI-generated TypeScript client. No payments, approvals, uploads or AI provider calls are implemented.
+
+## Prerequisites
+
+- Python 3.12, [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.22+ and pnpm 12.10.1.
+- Docker Desktop or Docker Engine with Compose v2+ for the full stack. Allow about 6 GB of memory and several GB of image/build storage. The first MinIO source build takes longer than an image pull.
+- macOS, Linux or WSL; run commands from the repository root.
+
+If uv is missing, install it globally using the upstream instructions, or keep it in this workspace:
+
+```sh
+python3.12 -m venv .tools/uv
+.tools/uv/bin/pip install uv==0.13.4
+```
+
+The Makefile automatically uses `.tools/uv/bin/uv` when `uv` is absent from PATH. Install pnpm with `npm install -g pnpm@12.10.1` if needed.
+
+## Full local bootstrap
+
+```sh
+make bootstrap
+```
+
+This generates `.env` with random local credentials and mode `0600`, installs both frozen workspaces, builds non-root application images, starts the infrastructure, migrates PostgreSQL, seeds six invoices and six POs with audit events, waits for readiness, then delivers an idempotent probe through RabbitMQ. Repeating bootstrap preserves data and secrets.
+
+| Service                  | Local URL                                                              |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Finance dashboard        | http://localhost:3100                                                  |
+| API documentation        | http://localhost:8000/docs                                             |
+| API liveness / readiness | http://localhost:8000/health/live · http://localhost:8000/health/ready |
+| Web liveness / readiness | http://localhost:3100/health/live · http://localhost:3100/health/ready |
+| RabbitMQ management      | http://localhost:15672                                                 |
+| MinIO S3 API / console   | http://localhost:9100 · http://localhost:9101                          |
+| PostgreSQL               | localhost:15432                                                        |
+
+Service credentials are in your ignored `.env`; they are never printed by setup. Compose binds published ports to loopback. Keep the stack local: authentication and tenant isolation are later milestones. Inspect it with `docker compose ps` and stop it with `make down`; named volumes are retained. Do not use `down -v` when you want to preserve records and audit history.
+
+MinIO is built from checksum-verified upstream source because its former public image could not be pulled. The upstream community repository is archived. This is a local dependency, not an endorsement for a production rollout; see [operations](docs/operations/local.md) for source and maintenance details.
+
+## Bootstrap without Docker
+
+```sh
+make bootstrap-lite
+make api
+# In a second terminal:
+make dev
+```
+
+Open http://localhost:3100. Lite mode migrates and seeds `.data/reconcileiq.db`, checks the ASGI health and snapshot handlers, and builds the frontend. RabbitMQ and MinIO are explicitly `not_required` in lite readiness; background delivery and object storage are not exercised. The generated host `.env` uses lite mode by default; Compose overrides database, broker and readiness settings internally. Stop the Compose web/API before running host processes on the same ports.
+
+For host development against the full infrastructure, override `RECONCILE_DATABASE_URL` with your local PostgreSQL URL and set `RECONCILE_INFRASTRUCTURE_REQUIRED=true`. The generated `.env` already holds the host broker URL. Do not put secret URLs in shell history; use an ignored local environment file or your shell's secure environment management.
+
+## Checks and development
+
+```sh
+make check                 # Ruff lint/format, mypy, pytest, contracts, offline eval, ESLint, tsc, Jest, Prettier
+pnpm build                 # Production frontend build
+make format                # Apply Python and frontend formatting
+make contracts             # Export implemented OpenAPI and regenerate TS schema
+make contracts-check       # Detect both server schema and generated client drift
+# Optional real-browser checks against the running stack:
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+Python equivalents use `uv run --all-packages <command>`. Do not omit `--all-packages` when running cross-workspace commands. Regenerate and commit both contracts and client schema after an API change. The eval command `uv run --all-packages reconcileiq-eval` compares independent labels to supplied mock outputs; it spends no AI credits and makes no model-quality claim.
+
+## Repository map
+
+```text
+apps/web/                  Next.js App Router, TypeScript, Tailwind, Jest
+services/api/              FastAPI request validation and read-only HTTP handlers
+services/worker/           Celery orchestration and idempotent bootstrap probe
+packages/database/         Pydantic settings, SQLAlchemy models, Alembic, synthetic seed
+packages/reconciliation/   Pure deterministic money utilities
+packages/contracts/        Implemented OpenAPI 3.1 contract
+packages/generated/        Generated TypeScript schema and typed fetch client
+packages/ai/               Untrusted extraction schema, offline eval harness and fixtures
+tests/                     Persistence, audit, API, concurrency, money and eval checks
+scripts/                   Secret-safe setup, bootstrap and contract tools
+infra/docker/              Non-root application and pinned-source MinIO images
+docs/                      Architecture, local operations and verification evidence
+```
+
+Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for measured results. `CODEX.md` is the preserved long-term blueprint; its future capabilities are not claims about milestone 01.

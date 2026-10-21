@@ -1,0 +1,14 @@
+pnpm-lock.yaml
+uv.lock
+CODEX.md
+packages/generated/src/schema.ts
+packages/contracts/openapi.yaml
+packages/ai/evals/*.jsonl
+.tools
+.venv
+.data
+.cache
+**/.next
+**/node_modules
+**/coverage
+*.py

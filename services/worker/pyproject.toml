@@ -1,0 +1,9 @@
+[project]
+name = "reconcileiq-worker"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["celery>=5.6,<6", "reconcileiq-database", "reconcileiq-ai"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

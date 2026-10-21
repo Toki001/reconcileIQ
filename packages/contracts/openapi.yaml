@@ -1,0 +1,277 @@
+openapi: 3.1.0
+info:
+  title: ReconcileIQ local foundation
+  description: Read-only synthetic workspace. No auth or real financial data in milestone
+    01.
+  version: 0.1.0
+paths:
+  /health/live:
+    get:
+      tags:
+      - health
+      summary: Live
+      operationId: getLiveness
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /health/ready:
+    get:
+      tags:
+      - health
+      summary: Ready
+      operationId: getReadiness
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /v1/demo/snapshot:
+    get:
+      tags:
+      - demo
+      summary: Snapshot
+      description: 'Bounded local fixture view: at most 100 records per collection.
+        Not a production list API.'
+      operationId: getDemoSnapshot
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSnapshot'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  schemas:
+    AuditRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        entity_id:
+          type: string
+          title: Entity Id
+        actor:
+          type: string
+          title: Actor
+        action:
+          type: string
+          title: Action
+        detail:
+          type: string
+          title: Detail
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+      type: object
+      required:
+      - id
+      - entity_id
+      - actor
+      - action
+      - detail
+      - occurred_at
+      title: AuditRead
+    DashboardSnapshot:
+      properties:
+        synthetic:
+          type: boolean
+          const: true
+          title: Synthetic
+          default: true
+        as_of:
+          type: string
+          format: date
+          title: As Of
+        invoices:
+          items:
+            $ref: '#/components/schemas/InvoiceRead'
+          type: array
+          maxItems: 100
+          title: Invoices
+        purchase_orders:
+          items:
+            $ref: '#/components/schemas/PurchaseOrderRead'
+          type: array
+          maxItems: 100
+          title: Purchase Orders
+        audit_events:
+          items:
+            $ref: '#/components/schemas/AuditRead'
+          type: array
+          maxItems: 100
+          title: Audit Events
+      type: object
+      required:
+      - as_of
+      - invoices
+      - purchase_orders
+      - audit_events
+      title: DashboardSnapshot
+    Health:
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+          - unavailable
+          title: Status
+        service:
+          type: string
+          const: api
+          title: Service
+          default: api
+        dependencies:
+          additionalProperties:
+            type: string
+            enum:
+            - ok
+            - unavailable
+            - not_required
+          type: object
+          title: Dependencies
+      type: object
+      required:
+      - status
+      title: Health
+    InvoiceRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        vendor:
+          type: string
+          title: Vendor
+        description:
+          type: string
+          title: Description
+        currency:
+          type: string
+          enum:
+          - USD
+          - EUR
+          - PHP
+          - JPY
+          - KWD
+          title: Currency
+        amount_minor:
+          type: integer
+          maximum: 9007199254740991.0
+          minimum: 0.0
+          title: Amount Minor
+        due_on:
+          type: string
+          format: date
+          title: Due On
+        status:
+          type: string
+          enum:
+          - matched
+          - exception
+          - needs_review
+          - duplicate
+          title: Status
+        purchase_order_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Purchase Order Id
+        exception_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Exception Code
+        exception_detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Exception Detail
+      type: object
+      required:
+      - id
+      - vendor
+      - description
+      - currency
+      - amount_minor
+      - due_on
+      - status
+      - purchase_order_id
+      - exception_code
+      - exception_detail
+      title: InvoiceRead
+    Problem:
+      properties:
+        code:
+          type: string
+          title: Code
+        detail:
+          type: string
+          title: Detail
+      type: object
+      required:
+      - code
+      - detail
+      title: Problem
+    PurchaseOrderRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        vendor:
+          type: string
+          title: Vendor
+        description:
+          type: string
+          title: Description
+        currency:
+          type: string
+          enum:
+          - USD
+          - EUR
+          - PHP
+          - JPY
+          - KWD
+          title: Currency
+        amount_minor:
+          type: integer
+          maximum: 9007199254740991.0
+          minimum: 0.0
+          title: Amount Minor
+        issued_on:
+          type: string
+          format: date
+          title: Issued On
+        status:
+          type: string
+          enum:
+          - open
+          - received
+          title: Status
+      type: object
+      required:
+      - id
+      - vendor
+      - description
+      - currency
+      - amount_minor
+      - issued_on
+      - status
+      title: PurchaseOrderRead
