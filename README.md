@@ -2,7 +2,9 @@
 
 An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
 
-**Milestone 01** is a working local, single-workspace demo using synthetic records. It includes Overview, Invoices, Purchase Orders, Reconciliation, Exceptions and Audit Log pages, with search, status filters and record details. The UI reads persisted data through an OpenAPI-generated TypeScript client. No payments, approvals, uploads or AI provider calls are implemented.
+**Milestone 02** adds authenticated, tenant-scoped REST mutations and Strawberry GraphQL reads, reviewed OpenAPI 3.1/GraphQL contracts, generated TypeScript clients, signed cursor pagination, upload verification, optimistic concurrency, idempotency and audit trails. The dashboard retains its six working synthetic pages and uses a server-held auditor key. Accepted asynchronous jobs are durable `pending_dispatch` admissions; business processing workers and full matching come later. Payments are prohibited.
+
+See the [complete API contract guide](packages/contracts/README.md) for roles, money, pagination, webhook signatures, errors and retry semantics.
 
 ## Prerequisites
 
@@ -37,7 +39,7 @@ This generates `.env` with random local credentials and mode `0600`, installs bo
 | MinIO S3 API / console   | http://localhost:9100 · http://localhost:9101                          |
 | PostgreSQL               | localhost:15432                                                        |
 
-Service credentials are in your ignored `.env`; they are never printed by setup. Compose binds published ports to loopback. Keep the stack local: authentication and tenant isolation are later milestones. Inspect it with `docker compose ps` and stop it with `make down`; named volumes are retained. Do not use `down -v` when you want to preserve records and audit history.
+Service credentials are in your ignored `.env`; they are never printed by setup. Compose binds published ports to loopback. Keep the stack local: API keys and tenant scoping are implemented, but the dashboard has no end-user login and this is not a production deployment. Inspect it with `docker compose ps` and stop it with `make down`; named volumes are retained. Do not use `down -v` when you want to preserve records and audit history.
 
 MinIO is built from checksum-verified upstream source because its former public image could not be pulled. The upstream community repository is archived. This is a local dependency, not an endorsement for a production rollout; see [operations](docs/operations/local.md) for source and maintenance details.
 
@@ -60,11 +62,13 @@ For host development against the full infrastructure, override `RECONCILE_DATABA
 make check                 # Ruff lint/format, mypy, pytest, contracts, offline eval, ESLint, tsc, Jest, Prettier
 pnpm build                 # Production frontend build
 make format                # Apply Python and frontend formatting
-make contracts             # Export implemented OpenAPI and regenerate TS schema
-make contracts-check       # Detect both server schema and generated client drift
+make contracts             # Export REST contract and regenerate REST/GraphQL clients
+make contracts-check       # Detect served schema and both generated client drifts
 # Optional real-browser checks against the running stack:
 pnpm exec playwright install chromium
 pnpm test:e2e
+# Against the running full stack; appends local probe records:
+uv run --all-packages python scripts/contracts_smoke.py
 ```
 
 Python equivalents use `uv run --all-packages <command>`. Do not omit `--all-packages` when running cross-workspace commands. Regenerate and commit both contracts and client schema after an API change. The eval command `uv run --all-packages reconcileiq-eval` compares independent labels to supplied mock outputs; it spends no AI credits and makes no model-quality claim.
@@ -73,12 +77,12 @@ Python equivalents use `uv run --all-packages <command>`. Do not omit `--all-pac
 
 ```text
 apps/web/                  Next.js App Router, TypeScript, Tailwind, Jest
-services/api/              FastAPI request validation and read-only HTTP handlers
+services/api/              FastAPI REST mutations, Strawberry GraphQL reads, auth
 services/worker/           Celery orchestration and idempotent bootstrap probe
 packages/database/         Pydantic settings, SQLAlchemy models, Alembic, synthetic seed
 packages/reconciliation/   Pure deterministic money utilities
-packages/contracts/        Implemented OpenAPI 3.1 contract
-packages/generated/        Generated TypeScript schema and typed fetch client
+packages/contracts/        Reviewed OpenAPI 3.1, GraphQL SDL and operations
+packages/generated/        Generated REST/GraphQL TypeScript and typed clients
 packages/ai/               Untrusted extraction schema, offline eval harness and fixtures
 tests/                     Persistence, audit, API, concurrency, money and eval checks
 scripts/                   Secret-safe setup, bootstrap and contract tools
@@ -86,4 +90,4 @@ infra/docker/              Non-root application and pinned-source MinIO images
 docs/                      Architecture, local operations and verification evidence
 ```
 
-Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for measured results. `CODEX.md` is the preserved long-term blueprint; its future capabilities are not claims about milestone 01.
+Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for the initial results and [milestone 02 verification](docs/verification/milestone-02.md) for current evidence. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.

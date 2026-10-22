@@ -1,7 +1,32 @@
 from decimal import Decimal
 
 import pytest
-from reconcileiq_reconciliation.money import MAX_MINOR, to_minor
+from reconcileiq_reconciliation.money import (
+    MAX_MINOR,
+    line_total_minor,
+    to_minor,
+    validate_header_totals,
+)
+
+
+def test_fractional_quantity_line_rounding_and_header_totals() -> None:
+    assert line_total_minor(Decimal("2.5"), 101) == 253
+    validate_header_totals([253, 100], 353, 10, 20, 363)
+
+
+@pytest.mark.parametrize("quantity,price", [("NaN", 1), ("0", 1), ("1", -1), ("2", MAX_MINOR)])
+def test_invalid_or_overflowing_line_amounts(quantity: str, price: int) -> None:
+    with pytest.raises(ValueError):
+        line_total_minor(Decimal(quantity), price)
+
+
+@pytest.mark.parametrize(
+    "subtotal,discount,tax,total",
+    [(-1, 0, 0, 0), (101, 0, 0, 101), (100, 101, 0, 0), (100, 0, 1, 100)],
+)
+def test_header_totals_fail_closed(subtotal: int, discount: int, tax: int, total: int) -> None:
+    with pytest.raises(ValueError):
+        validate_header_totals([100], subtotal, discount, tax, total)
 
 
 @pytest.mark.parametrize(

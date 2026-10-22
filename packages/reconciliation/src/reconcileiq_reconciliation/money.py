@@ -16,3 +16,33 @@ def to_minor(amount: Decimal, currency: str) -> int:
         context.prec = max(28, len(amount.as_tuple().digits) + 4)
         scaled = amount * (10 ** CURRENCY_EXPONENTS[currency])
         return int(scaled.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
+def line_total_minor(quantity: Decimal, unit_price_minor: int) -> int:
+    if (
+        not quantity.is_finite()
+        or quantity <= 0
+        or type(unit_price_minor) is not int
+        or not 0 <= unit_price_minor <= MAX_MINOR
+    ):
+        raise ValueError("Positive finite quantity and safe integer unit price are required")
+    with localcontext() as context:
+        context.prec = 50
+        total = (quantity * unit_price_minor).quantize(Decimal(1), rounding=ROUND_HALF_UP)
+    if total > MAX_MINOR:
+        raise ValueError("Line total exceeds the safe integer range")
+    return int(total)
+
+
+def validate_header_totals(
+    lines: list[int], subtotal: int, discount: int, tax: int, total: int
+) -> None:
+    if any(
+        type(value) is not int or not 0 <= value <= MAX_MINOR
+        for value in [*lines, subtotal, discount, tax, total]
+    ):
+        raise ValueError("All header and line amounts must be safe nonnegative integers")
+    if sum(lines) != subtotal:
+        raise ValueError("Subtotal must equal the sum of line totals")
+    if discount > subtotal or total != subtotal - discount + tax:
+        raise ValueError("Grand total must equal subtotal minus discount plus exclusive tax")

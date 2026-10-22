@@ -5,7 +5,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/generated/package.json packages/generated/package.json
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --network-concurrency=8 --fetch-timeout=30000
 COPY apps/web/ apps/web/
 COPY packages/generated/ packages/generated/
 RUN pnpm build

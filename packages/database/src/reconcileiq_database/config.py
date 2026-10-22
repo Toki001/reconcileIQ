@@ -2,8 +2,13 @@ from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import AnyHttpUrl, SecretStr, model_validator
+from pydantic import AnyHttpUrl, BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class SupplierWebhookConfig(BaseModel):
+    organization_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,32}$")
+    secret: SecretStr = Field(min_length=32)
 
 
 class Settings(BaseSettings):
@@ -16,11 +21,30 @@ class Settings(BaseSettings):
     broker_url: SecretStr = SecretStr("memory://")
     minio_endpoint: AnyHttpUrl = AnyHttpUrl("http://127.0.0.1:9000")
     infrastructure_required: bool = False
+    admin_token: SecretStr = SecretStr("")
+    reviewer_token: SecretStr = SecretStr("")
+    auditor_token: SecretStr = SecretStr("")
+    cursor_secret: SecretStr = SecretStr("")
+    supplier_webhooks: dict[str, SupplierWebhookConfig] = Field(default_factory=dict)
+    minio_access_key: SecretStr = SecretStr("")
+    minio_secret_key: SecretStr = SecretStr("")
+    minio_public_endpoint: AnyHttpUrl = AnyHttpUrl("http://127.0.0.1:9100")
+    minio_bucket: str = Field(default="invoices", pattern=r"^[a-z0-9][a-z0-9-]{2,62}$")
 
     @model_validator(mode="after")
     def validate_urls(self) -> "Settings":
         database = self.database_url.get_secret_value()
         broker = self.broker_url.get_secret_value()
+        for value in (
+            self.admin_token,
+            self.reviewer_token,
+            self.auditor_token,
+            self.cursor_secret,
+        ):
+            if value.get_secret_value() and len(value.get_secret_value()) < 32:
+                raise ValueError(
+                    "Configured API and cursor secrets must contain at least 32 characters"
+                )
         if not database.startswith(("sqlite:///", "postgresql+psycopg://")):
             raise ValueError("Use SQLite locally or PostgreSQL with the psycopg driver")
         if urlsplit(broker).scheme not in {"amqp", "amqps", "memory"}:

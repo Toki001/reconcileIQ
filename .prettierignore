@@ -2,6 +2,7 @@ pnpm-lock.yaml
 uv.lock
 CODEX.md
 packages/generated/src/schema.ts
+packages/generated/src/graphql.ts
 packages/contracts/openapi.yaml
 packages/ai/evals/*.jsonl
 .tools

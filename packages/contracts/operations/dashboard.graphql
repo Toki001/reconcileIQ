@@ -1,0 +1,176 @@
+query InvoiceDashboard(
+  $first: Int! = 20
+  $after: String
+  $filter: InvoiceFilter
+) {
+  dashboardMetrics {
+    invoiceCount
+    exceptionCount
+    balances {
+      currency
+      amountMinor
+    }
+  }
+  invoices(first: $first, after: $after, filter: $filter) {
+    edges {
+      cursor
+      node {
+        id
+        vendor
+        description
+        money {
+          currency
+          amountMinor
+        }
+        dueOn
+        status
+        version
+        synthetic
+        createdAt
+        purchaseOrderId
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query PurchaseOrderList($first: Int! = 20, $after: String) {
+  purchaseOrders(first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        id
+        vendor
+        description
+        money {
+          currency
+          amountMinor
+        }
+        issuedOn
+        status
+        version
+        createdAt
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query InvoiceDrilldown($id: ID!, $first: Int! = 20, $after: String) {
+  invoice(id: $id) {
+    id
+    vendor
+    description
+    status
+    money {
+      currency
+      amountMinor
+    }
+    version
+    synthetic
+    createdAt
+    dueOn
+    purchaseOrderId
+  }
+  reconciliationRuns(invoiceId: $id, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        id
+        invoiceId
+        jobId
+        status
+        policyId
+        outcome
+        createdAt
+        synthetic
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query ReconciliationDetails($id: ID!, $first: Int! = 20, $after: String) {
+  reconciliationResult(id: $id) {
+    id
+    invoiceId
+    jobId
+    status
+    policyId
+    outcome
+    synthetic
+    createdAt
+    discrepancies(first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          id
+          invoiceId
+          reconciliationId
+          code
+          detail
+          field
+          expected
+          observed
+          currency
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}
+
+query ExceptionList($first: Int! = 20, $after: String) {
+  exceptions(first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        id
+        invoiceId
+        reconciliationId
+        code
+        detail
+        field
+        expected
+        observed
+        currency
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query AuditTimeline($entityId: ID!, $first: Int! = 20, $after: String) {
+  auditTimeline(entityId: $entityId, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        id
+        entityId
+        actor
+        action
+        detail
+        occurredAt
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

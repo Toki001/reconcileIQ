@@ -21,7 +21,8 @@ def main() -> None:
             raise SystemExit(
                 "TypeScript client drift: run make contracts and commit both artifacts."
             )
-    print("Generated TypeScript schema matches OpenAPI.")
+    subprocess.run(["pnpm", "generate:graphql", "--check"], check=True)
+    print("Generated REST and GraphQL clients match canonical contracts.")
 
 
 if __name__ == "__main__":

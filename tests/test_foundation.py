@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 from alembic import command
@@ -9,6 +10,7 @@ from reconcileiq_api.main import create_app
 from reconcileiq_database.config import Settings, get_settings
 from reconcileiq_database.models import AuditEvent, Invoice, JobExecution
 from reconcileiq_database.seed import seed_demo
+from reconcileiq_database.session import build_engine
 from reconcileiq_worker.tasks import record_probe
 from sqlalchemy import Engine, func, select, text
 from sqlalchemy.exc import DatabaseError, IntegrityError
@@ -65,7 +67,9 @@ def test_concurrent_duplicate_worker_delivery_has_one_effect(engine: Engine) -> 
 
 def test_health_and_persisted_demo_contract(engine: Engine) -> None:
     seed_demo(engine)
-    with TestClient(create_app(get_settings())) as client:
+    with TestClient(
+        create_app(get_settings()), headers={"Authorization": "Bearer test-auditor-" + "x" * 40}
+    ) as client:
         assert client.get("/health/live").json()["status"] == "ok"
         health = client.get("/health/ready")
         assert health.status_code == 200
@@ -92,7 +96,9 @@ def test_unmigrated_database_is_unready_and_errors_do_not_leak() -> None:
     ) as client:
         assert client.get("/health/live").status_code == 200
         assert client.get("/health/ready").status_code == 503
-        failure = client.get("/v1/demo/snapshot")
+        failure = client.get(
+            "/v1/demo/snapshot", headers={"Authorization": "Bearer test-auditor-" + "x" * 40}
+        )
         assert failure.status_code == 503
         assert failure.json()["code"] == "DATABASE_UNAVAILABLE"
         assert "SELECT" not in failure.text
@@ -112,5 +118,52 @@ def test_settings_redact_secrets_and_fail_closed(monkeypatch: pytest.MonkeyPatch
 
 
 def test_audit_destroying_downgrade_is_refused(engine: Engine) -> None:
-    with pytest.raises(RuntimeError, match="destroy audit"):
+    with pytest.raises(RuntimeError, match="audit"):
         command.downgrade(Config("alembic.ini"), "base")
+
+
+def test_upgrade_preserves_existing_records_and_audit_triggers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RECONCILE_DATABASE_URL", f"sqlite:///{tmp_path / 'legacy.db'}")
+    get_settings.cache_clear()
+    configuration = Config("alembic.ini")
+    command.upgrade(configuration, "0001_foundation")
+    database = build_engine(get_settings())
+    try:
+        with database.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO purchase_orders "
+                    "(id,vendor,description,currency,amount_minor,issued_on,status) "
+                    "VALUES ('LEGACY-PO','Legacy vendor','Preserved','PHP',250,'2026-10-21','open')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO invoices "
+                    "(id,vendor,description,currency,amount_minor,due_on,status,purchase_order_id) "
+                    "VALUES ('LEGACY-INV','Legacy vendor','Preserved','PHP',250,"
+                    "'2026-10-21','matched','LEGACY-PO')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO audit_events (id,entity_id,actor,action,detail,occurred_at) "
+                    "VALUES ('LEGACY-EVENT','LEGACY-INV','legacy-user','created',"
+                    "'Original history','2026-10-21 00:00:00')"
+                )
+            )
+        command.upgrade(configuration, "head")
+        with Session(database) as session:
+            invoice = session.get(Invoice, "LEGACY-INV")
+            audit = session.get(AuditEvent, "LEGACY-EVENT")
+            assert invoice is not None and invoice.amount_minor == 250
+            assert invoice.organization_id == "demo" and invoice.version == 1
+            assert audit is not None and audit.detail == "Original history"
+        with database.begin() as connection, pytest.raises(DatabaseError, match="append-only"):
+            connection.execute(text("DELETE FROM audit_events WHERE id='LEGACY-EVENT'"))
+    finally:
+        database.dispose()
+        get_settings.cache_clear()

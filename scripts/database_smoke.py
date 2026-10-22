@@ -1,4 +1,4 @@
-"""Check the running PostgreSQL schema, audit protection and seed repeatability."""
+"Check the running PostgreSQL schema, audit protection and seed repeatability."
 
 from alembic import command
 from alembic.config import Config
@@ -18,8 +18,14 @@ def main() -> None:
         command.check(Config("alembic.ini"))
         with Session(engine) as session:
             before = session.scalar(select(func.count()).select_from(AuditEvent))
-            assert session.scalar(select(func.count()).select_from(Invoice)) == 6
-            assert session.scalar(select(func.count()).select_from(PurchaseOrder)) == 6
+            assert (
+                session.scalar(
+                    select(func.count()).select_from(Invoice).where(Invoice.synthetic.is_(True))
+                )
+                == 6
+            )
+            po_count = session.scalar(select(func.count()).select_from(PurchaseOrder))
+            assert po_count is not None and po_count >= 6
             assert before is not None and before >= 12
         seed_demo(engine)
         # Each attempted mutation is in its own transaction. Even if a trigger is

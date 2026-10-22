@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 
 const webConfig = z.object({
+  RECONCILE_WEB_API_TOKEN: z.string().default(""),
   API_BASE_URL: z
     .url()
     .refine(
@@ -12,5 +13,8 @@ const webConfig = z.object({
 });
 
 export function getWebConfig() {
-  return webConfig.parse({ API_BASE_URL: process.env.API_BASE_URL });
+  return webConfig.parse({
+    API_BASE_URL: process.env.API_BASE_URL,
+    RECONCILE_WEB_API_TOKEN: process.env.RECONCILE_WEB_API_TOKEN,
+  });
 }

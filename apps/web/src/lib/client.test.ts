@@ -31,3 +31,15 @@ test("typed dependency failures stay failures", async () => {
   expect(data).toBeUndefined();
   expect(error?.code).toBe("DATABASE_UNAVAILABLE");
 });
+
+test("REST client sends server-provided credentials without query parameters", async () => {
+  const fetcher = jest
+    .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
+    .mockResolvedValue(Response.json(fixture));
+  await createApi("http://api.local", fetcher, "test-key").GET(
+    "/v1/demo/snapshot",
+  );
+  const request = fetcher.mock.calls[0][0] as Request;
+  expect(request.headers.get("Authorization")).toBe("Bearer test-key");
+  expect(request.url).not.toContain("test-key");
+});

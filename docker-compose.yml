@@ -12,6 +12,14 @@ x-python: &python
     RECONCILE_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER:?Run make env}:${RABBITMQ_DEFAULT_PASS:?Run make env}@rabbitmq:5672//
     RECONCILE_MINIO_ENDPOINT: http://minio:9000
     RECONCILE_INFRASTRUCTURE_REQUIRED: "true"
+    RECONCILE_ADMIN_TOKEN: ${RECONCILE_ADMIN_TOKEN:?Run make env}
+    RECONCILE_REVIEWER_TOKEN: ${RECONCILE_REVIEWER_TOKEN:?Run make env}
+    RECONCILE_AUDITOR_TOKEN: ${RECONCILE_AUDITOR_TOKEN:?Run make env}
+    RECONCILE_CURSOR_SECRET: ${RECONCILE_CURSOR_SECRET:?Run make env}
+    RECONCILE_SUPPLIER_WEBHOOKS: ${RECONCILE_SUPPLIER_WEBHOOKS:?Run make env}
+    RECONCILE_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?Run make env}
+    RECONCILE_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Run make env}
+    RECONCILE_MINIO_PUBLIC_ENDPOINT: http://127.0.0.1:${MINIO_PORT:-9100}
 
 services:
   postgres:
@@ -133,6 +141,7 @@ services:
     init: true
     environment:
       API_BASE_URL: http://api:8000
+      RECONCILE_WEB_API_TOKEN: ${RECONCILE_AUDITOR_TOKEN:?Run make env}
     ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
     depends_on:
       api: { condition: service_healthy }

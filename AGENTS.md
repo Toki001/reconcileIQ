@@ -13,18 +13,18 @@ Read this file and `CODEX.md` before changing code. Implement the requested mile
 ## Ownership
 
 - `apps/web`: presentation and interaction through generated clients; no financial decision rules or server secrets in client bundles.
-- `services/api`: HTTP validation and orchestration; derive identity/tenant context on the server when auth is introduced.
+- `services/api`: HTTP validation and orchestration; derive identity/tenant context from server-side credential lookup.
 - `services/worker`: Celery orchestration; no HTTP handlers or UI code.
 - `packages/database`: settings, SQLAlchemy models, transactions, migrations and local synthetic seed.
 - `packages/reconciliation`: pure deterministic monetary rules, with no network, database or AI dependencies.
-- `packages/contracts`: checked-in OpenAPI for implemented endpoints only; export from the API and regenerate clients together.
-- `packages/generated`: generated TypeScript schema and a small typed client factory. Never hand-edit generated schema.
+- `packages/contracts`: reviewed OpenAPI for implemented endpoints and hand-authored GraphQL SDL; verify served schemas and regenerate clients together.
+- `packages/generated`: generated REST/GraphQL types and typed client factories. Never hand-edit generated artifacts.
 - `packages/ai`: untrusted extraction schemas and offline evaluation tools. Mocked fixtures do not measure model quality.
 
-## Milestone 01 scope
+## Milestone 02 scope
 
-Local, single synthetic workspace; read-only finance UI, persistence foundation, health checks, toolchains and an idempotent worker probe. Authentication, tenant isolation, production deployment, upload/extraction, full reconciliation, review mutations, GraphQL and provider integrations belong to later milestones. Do not imply they work. Synthetic state labels are seeded examples, not approval decisions.
+Local API-key authentication, tenant-scoped REST mutations and GraphQL reads, reviewed contracts, generated clients, durable asynchronous admission and audit trails. New jobs remain `pending_dispatch` until the later processing milestone provides an outbox publisher and business workers. Seeded completed reconciliation results must be explicitly synthetic. No production identity provider, document extraction, full matching or AI provider integration is claimed. The web UI remains a local read-only synthetic workspace behind a server-held auditor key.
 
 ## Workflow
 
-Use uv with the root workspace lock and pnpm with the root workspace lock. Do not commit `.env`, credentials, runtime databases, build artifacts or dependency directories. Use `python3 scripts/setup_env.py`; it must not overwrite existing secrets. Run `make check`, `make bootstrap-lite` and the frontend production build; run `make bootstrap` when Docker is available. Record actual evidence and limitations in `docs/verification/milestone-01.md`. Commit the requested milestone without overwriting user work.
+Use uv with the root workspace lock and pnpm with the root workspace lock. Do not commit `.env`, credentials, runtime databases, build artifacts or dependency directories. Use `python3 scripts/setup_env.py`; it must not overwrite existing secrets. Run `make check`, `make bootstrap-lite` and the frontend production build; run `make bootstrap` when Docker is available. Record actual evidence and limitations in `docs/verification/milestone-02.md`. Commit the requested milestone without overwriting user work.

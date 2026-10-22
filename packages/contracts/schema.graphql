@@ -1,0 +1,169 @@
+scalar Date
+scalar DateTime
+scalar MinorUnits
+
+enum Currency {
+  USD
+  EUR
+  PHP
+  JPY
+  KWD
+}
+enum InvoiceStatus {
+  UPLOAD_REQUESTED
+  PENDING_EXTRACTION
+  EXTRACTED
+  NEEDS_REVIEW
+  MATCHED
+  EXCEPTION
+  DUPLICATE
+  REVIEWED_ACCEPTED
+  REVIEWED_REJECTED
+}
+enum RunStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+type Money {
+  amountMinor: MinorUnits!
+  currency: Currency!
+}
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+input InvoiceFilter {
+  status: InvoiceStatus = null
+  vendor: String = null
+}
+
+type Invoice {
+  id: ID!
+  vendor: String
+  description: String!
+  money: Money
+  dueOn: Date
+  status: InvoiceStatus!
+  purchaseOrderId: ID
+  version: Int!
+  createdAt: DateTime!
+  synthetic: Boolean!
+}
+type InvoiceEdge {
+  cursor: String!
+  node: Invoice!
+}
+type InvoiceConnection {
+  edges: [InvoiceEdge!]!
+  pageInfo: PageInfo!
+}
+type PurchaseOrder {
+  id: ID!
+  vendor: String!
+  description: String!
+  money: Money!
+  issuedOn: Date!
+  status: String!
+  version: Int!
+  createdAt: DateTime!
+}
+type PurchaseOrderEdge {
+  cursor: String!
+  node: PurchaseOrder!
+}
+type PurchaseOrderConnection {
+  edges: [PurchaseOrderEdge!]!
+  pageInfo: PageInfo!
+}
+type Discrepancy {
+  id: ID!
+  invoiceId: ID!
+  reconciliationId: ID!
+  code: String!
+  detail: String!
+  field: String!
+  expected: String
+  observed: String
+  currency: Currency
+}
+type DiscrepancyEdge {
+  cursor: String!
+  node: Discrepancy!
+}
+type DiscrepancyConnection {
+  edges: [DiscrepancyEdge!]!
+  pageInfo: PageInfo!
+}
+type ReconciliationResult {
+  id: ID!
+  invoiceId: ID!
+  jobId: ID
+  status: RunStatus!
+  policyId: String!
+  outcome: String
+  createdAt: DateTime!
+  synthetic: Boolean!
+  discrepancies(first: Int! = 20, after: String = null): DiscrepancyConnection!
+}
+type ReconciliationEdge {
+  cursor: String!
+  node: ReconciliationResult!
+}
+type ReconciliationConnection {
+  edges: [ReconciliationEdge!]!
+  pageInfo: PageInfo!
+}
+type AuditEvent {
+  id: ID!
+  entityId: ID!
+  actor: String!
+  action: String!
+  detail: String!
+  occurredAt: DateTime!
+}
+type AuditEdge {
+  cursor: String!
+  node: AuditEvent!
+}
+type AuditConnection {
+  edges: [AuditEdge!]!
+  pageInfo: PageInfo!
+}
+type CurrencyBalance {
+  currency: Currency!
+  amountMinor: MinorUnits!
+}
+type DashboardMetrics {
+  invoiceCount: Int!
+  exceptionCount: Int!
+  balances: [CurrencyBalance!]!
+}
+
+type Query {
+  invoices(
+    first: Int! = 20
+    after: String = null
+    filter: InvoiceFilter = null
+  ): InvoiceConnection!
+  invoice(id: ID!): Invoice
+  purchaseOrders(
+    first: Int! = 20
+    after: String = null
+  ): PurchaseOrderConnection!
+  reconciliationRuns(
+    invoiceId: ID!
+    first: Int! = 20
+    after: String = null
+  ): ReconciliationConnection!
+  reconciliationResult(id: ID!): ReconciliationResult
+  exceptions(first: Int! = 20, after: String = null): DiscrepancyConnection!
+  discrepancy(id: ID!): Discrepancy
+  auditTimeline(
+    entityId: ID!
+    first: Int! = 20
+    after: String = null
+  ): AuditConnection!
+  dashboardMetrics: DashboardMetrics!
+}

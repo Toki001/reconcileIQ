@@ -1,4 +1,4 @@
-"""Small, deterministic synthetic workspace, deliberately separate from real ingestion."""
+"Small, deterministic synthetic workspace, deliberately separate from real ingestion."
 
 from datetime import UTC, date, datetime
 
@@ -6,6 +6,7 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from reconcileiq_database.config import get_settings
+from reconcileiq_database.contract_seed import seed_contracts
 from reconcileiq_database.models import AuditEvent, Invoice, PurchaseOrder
 from reconcileiq_database.session import build_engine
 
@@ -97,6 +98,7 @@ def main() -> None:
     engine = build_engine(get_settings())
     try:
         seed_demo(engine)
+        seed_contracts(engine, get_settings())
     finally:
         engine.dispose()
     print("Synthetic workspace seeded (idempotent).")

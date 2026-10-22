@@ -12,6 +12,7 @@ install: env
 contracts:
 	$(UV) run --all-packages python scripts/export_contract.py
 	pnpm generate:client
+	pnpm generate:graphql
 
 contracts-check:
 	$(UV) run --all-packages python scripts/export_contract.py --check
@@ -39,7 +40,9 @@ bootstrap-lite: install
 	pnpm build
 
 bootstrap: install
-	docker compose up -d --build --wait --wait-timeout 300
+	docker compose build api
+	docker compose build web minio
+	docker compose up -d --no-build --wait --wait-timeout 300
 	docker compose exec -T api python scripts/database_smoke.py
 	docker compose exec -T api python scripts/worker_smoke.py
 

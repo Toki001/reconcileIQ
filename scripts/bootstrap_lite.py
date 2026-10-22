@@ -1,4 +1,4 @@
-"""Bootstrap SQLite and exercise the actual ASGI handlers, without external services."""
+"Bootstrap SQLite and exercise the actual ASGI handlers, without external services."
 
 import os
 import subprocess
@@ -14,11 +14,15 @@ def main() -> None:
         subprocess.run([sys.executable, "-m", *command], check=True)
     from fastapi.testclient import TestClient
     from reconcileiq_api.main import app
+    from reconcileiq_database.config import get_settings
 
     with TestClient(app) as client:
         assert client.get("/health/live").status_code == 200
         assert client.get("/health/ready").status_code == 200
-        response = client.get("/v1/demo/snapshot")
+        response = client.get(
+            "/v1/demo/snapshot",
+            headers={"Authorization": f"Bearer {get_settings().auditor_token.get_secret_value()}"},
+        )
         response.raise_for_status()
         assert len(response.json()["invoices"]) == 6
     print("Lite bootstrap passed: migration, seed, liveness, database readiness and six invoices.")

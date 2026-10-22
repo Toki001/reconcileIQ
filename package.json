@@ -16,10 +16,15 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "generate:client": "openapi-typescript packages/contracts/openapi.yaml -o packages/generated/src/schema.ts"
+    "generate:client": "openapi-typescript packages/contracts/openapi.yaml -o packages/generated/src/schema.ts",
+    "generate:graphql": "graphql-codegen --config codegen.ts"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^7.4.6",
+    "@graphql-codegen/typed-document-node": "^7.2.0",
+    "@graphql-codegen/typescript-operations": "^6.1.10",
     "@playwright/test": "^1.64.1",
+    "graphql": "^17.0.2",
     "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2"
   }

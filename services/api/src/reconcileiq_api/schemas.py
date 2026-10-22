@@ -5,7 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MoneyMinor = Annotated[int, Field(strict=True, ge=0, le=9_007_199_254_740_991)]
 Currency = Literal["USD", "EUR", "PHP", "JPY", "KWD"]
-InvoiceStatus = Literal["matched", "exception", "needs_review", "duplicate"]
+InvoiceStatus = Literal[
+    "matched", "exception", "needs_review", "duplicate", "reviewed_accepted", "reviewed_rejected"
+]
 
 
 class ReadModel(BaseModel):
@@ -32,7 +34,7 @@ class PurchaseOrderRead(ReadModel):
     currency: Currency
     amount_minor: MoneyMinor
     issued_on: date
-    status: Literal["open", "received"]
+    status: Literal["open", "received", "cancelled"]
 
 
 class AuditRead(ReadModel):
