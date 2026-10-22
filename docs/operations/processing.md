@@ -102,12 +102,16 @@ Read the actual version first. Identical HTTP retries return the original new jo
 
 ```sh
 RECONCILE_TEST_POSTGRES=1 make check
+make reliability-check
 # Authorized, controlled local fault injection; temporarily pauses only this stack's
 # broker, kills/restarts its worker, and appends new synthetic probe records:
 uv run --all-packages python scripts/processing_smoke.py
+uv run --all-packages python scripts/reliability_smoke.py
 ```
 
 The fault script never resets the database or deletes documents. It verifies broker recovery, worker termination/restart with pending work, five missing-object attempts, retained terminal publication, denied auditor replay, idempotent admin replay and unchanged financial fixtures. A failed run may leave labelled probe records for diagnosis; restore controlled service interruptions before investigating. Run against local development only. The pre-activation backup was actually restored into a separate temporary database and checked before activation; see [recorded results](../verification/milestone-04.md).
+
+Run shared-service fault scripts and browser processing tests sequentially. `reliability_smoke.py` pauses only this stack's MinIO/worker, verifies a persisted storage retry, restores both and measures 12 synthetic digital PDFs. It appends labelled probe records and never deletes retained documents. `make reliability-check` uses temporary SQLite files, private PostgreSQL schemas, newly created migration databases, private RabbitMQ queues and a uniquely created MinIO bucket. Cleanup removes only resources created by that test. Its Linux prefork test uses the local worker image plus read-only test/source mounts, test-only 1/3-second deadlines and accelerated lease expiry; the application worker keeps its 40/60-second deadlines and 120-second lease. Statement targets are 100% for accounting and at least 90% for processing, providers, dispatch and financial persistence; branch coverage and remaining gaps are reported separately. See [milestone 05 evidence](../verification/milestone-05.md).
 
 Milestone 03's diagnostic exposure informed the worker's logging filters: configured secrets, credential-bearing connection strings and database/broker passwords are redacted, raw exception chains are removed, and PDF parser warnings are suppressed. Task messages contain IDs, not documents or presigned URLs. Keep environment files and local backups private. This is defense against accidental diagnostics, not a substitute for production identity, broker ACL design, PDF sandboxing, patching or credential lifecycle controls.
 

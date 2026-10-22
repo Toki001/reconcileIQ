@@ -6,6 +6,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+from billiard.exceptions import SoftTimeLimitExceeded
 from reconcileiq_database.config import Settings
 from reconcileiq_database.financial import identity
 from reconcileiq_database.models import (
@@ -224,6 +225,10 @@ def process_job(
             event(session, job, "extraction_text_started")
         content = (provider or DigitalPdfProvider()).extract(data)
         complete(engine, org, job_id, token, digest, content)
+    except SoftTimeLimitExceeded:
+        finish_failure(
+            engine, settings, org, job_id, token, ProcessingError("PROCESSING_TIMEOUT", True)
+        )
     except ProcessingError as error:
         finish_failure(engine, settings, org, job_id, token, error)
     except Exception:

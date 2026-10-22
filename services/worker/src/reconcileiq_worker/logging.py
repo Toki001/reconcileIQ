@@ -2,7 +2,7 @@
 
 import logging
 import re
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from celery.signals import after_setup_logger, after_setup_task_logger
 from reconcileiq_database.config import get_settings
@@ -17,6 +17,7 @@ class SafeDiagnostics(logging.Filter):
             settings.database_url,
             settings.broker_url,
             settings.minio_secret_key,
+            settings.minio_access_key,
             settings.admin_token,
             settings.reviewer_token,
             settings.auditor_token,
@@ -27,6 +28,7 @@ class SafeDiagnostics(logging.Filter):
             [
                 make_url(settings.database_url.get_secret_value()).password or "",
                 urlsplit(settings.broker_url.get_secret_value()).password or "",
+                unquote(urlsplit(settings.broker_url.get_secret_value()).password or ""),
             ]
         )
         hidden.extend(

@@ -11,6 +11,7 @@ from math import ceil
 from typing import Protocol
 from urllib.parse import urlsplit
 
+from billiard.exceptions import SoftTimeLimitExceeded
 from minio import Minio
 from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict, Field
@@ -147,5 +148,7 @@ class DigitalPdfProvider:
             return DocumentText(pages=pages)
         except ProcessingError:
             raise
+        except SoftTimeLimitExceeded:
+            raise ProcessingError("PROCESSING_TIMEOUT", True) from None
         except Exception:
             raise ProcessingError("INVALID_PDF") from None

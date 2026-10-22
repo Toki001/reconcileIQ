@@ -2,7 +2,7 @@
 
 An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
 
-**Milestone 04** runs reliable asynchronous digital-PDF text processing through Celery, RabbitMQ, MinIO and PostgreSQL. Confirmed outbox dispatch, recovery leases, five-attempt retries, durable failure records and audited admin replay replace pending-only admission. The Invoices page shows persistent processing states. Captured text stays untrusted; financial fields, matching, OCR and AI extraction are later work. Existing financial models, fixtures, authenticated APIs and generated clients remain compatible. Payments are prohibited.
+**Milestone 05** verifies the existing digital-PDF pipeline with property-based accounting tests, migration rollback checks, real RabbitMQ confirms, isolated Celery timeout/crash recovery and browser processing workflows. Confirmed defects in Decimal bounds, timeout classification and credential redaction are fixed. Captured text stays untrusted; financial fields, matching, OCR and AI extraction are later work. Existing records, financial rules, contracts and UI remain compatible. Payments are prohibited.
 
 See the [complete API contract guide](packages/contracts/README.md) for roles, money, pagination, webhook signatures, errors and retry semantics.
 
@@ -68,12 +68,16 @@ make fixtures-check        # Verify 200 deterministic PDFs and their ground-trut
 make seed-financial        # Idempotent isolated financial seed in the configured database
 docker compose exec -T worker python -m reconcileiq_worker.status
 RECONCILE_TEST_POSTGRES=1 make check  # Include isolated real-PostgreSQL integration cases
+make reliability-check     # Private RabbitMQ/MinIO/Celery probes; 100% accounting, >=90% critical statements
 uv run --all-packages python scripts/postgres_m03_smoke.py
 # Optional real-browser checks against the running stack:
 pnpm exec playwright install chromium
 pnpm test:e2e
 # Against the running full stack; appends local probe records:
 uv run --all-packages python scripts/contracts_smoke.py
+# Controlled local faults; run sequentially, never alongside browser worker pauses:
+uv run --all-packages python scripts/processing_smoke.py
+uv run --all-packages python scripts/reliability_smoke.py
 ```
 
 Python equivalents use `uv run --all-packages <command>`. Do not omit `--all-packages` when running cross-workspace commands. Regenerate and commit both contracts and client schema after an API change. The eval command `uv run --all-packages reconcileiq-eval` compares independent labels to supplied mock outputs; it spends no AI credits and makes no model-quality claim.
@@ -95,4 +99,4 @@ infra/docker/              Non-root application and pinned-source MinIO images
 docs/                      Architecture, local operations and verification evidence
 ```
 
-Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for the initial results and [milestone 02 verification](docs/verification/milestone-02.md) for API evidence. See [financial persistence](docs/architecture/database.md), [migration/seed operations](docs/operations/database.md) and [milestone 03 verification](docs/verification/milestone-03.md) for financial evidence. See the [processing runbook](docs/operations/processing.md) and [milestone 04 verification](docs/verification/milestone-04.md) for current operation and measured results. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.
+Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries and [architecture](docs/architecture/overview.md) for ownership. Historical evidence is recorded for milestones [01](docs/verification/milestone-01.md), [02](docs/verification/milestone-02.md), [03](docs/verification/milestone-03.md) and [04](docs/verification/milestone-04.md). See [financial persistence](docs/architecture/database.md), [migration operations](docs/operations/database.md), the [processing runbook](docs/operations/processing.md) and [milestone 05 verification](docs/verification/milestone-05.md) for current boundaries and measured results. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.

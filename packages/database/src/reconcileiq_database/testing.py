@@ -43,3 +43,31 @@ def postgres_schema() -> Iterator[tuple[Engine, URL]]:
         with control.begin() as connection:
             connection.execute(DropSchema(schema, cascade=True))
         control.dispose()
+
+
+@contextmanager
+def postgres_database() -> Iterator[tuple[Engine, URL]]:
+    """Fresh migration database on the local Compose server; remove only what we create."""
+    base = local_postgres_url()
+    if base.host not in {"127.0.0.1", "localhost"} or base.port != 15432:
+        raise ValueError("Disposable database tests require local Compose PostgreSQL on port 15432")
+    name = "riq_m05_test_" + uuid4().hex
+    control = create_engine(base, isolation_level="AUTOCOMMIT", connect_args={"connect_timeout": 3})
+    database: Engine | None = None
+    created = False
+    try:
+        with control.connect() as connection:
+            connection.exec_driver_sql(f'CREATE DATABASE "{name}"')
+            created = True
+        url = base.set(database=name).difference_update_query(["options"])
+        database = create_engine(url, connect_args={"connect_timeout": 3})
+        yield database, url
+    finally:
+        if database is not None:
+            database.dispose()
+        try:
+            if created:
+                with control.connect() as connection:
+                    connection.exec_driver_sql(f'DROP DATABASE "{name}"')
+        finally:
+            control.dispose()

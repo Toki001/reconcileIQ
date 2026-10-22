@@ -10,10 +10,10 @@ def to_minor(amount: Decimal, currency: str) -> int:
         raise ValueError("Amount must be a nonnegative finite Decimal")
     if currency not in CURRENCY_EXPONENTS:
         raise ValueError("Unsupported currency")
-    if amount > Decimal(MAX_MINOR).scaleb(-CURRENCY_EXPONENTS[currency]):
-        raise ValueError("Amount exceeds the supported safe integer range")
     with localcontext() as context:
         context.prec = max(28, len(amount.as_tuple().digits) + 4)
+        if amount > Decimal(MAX_MINOR).scaleb(-CURRENCY_EXPONENTS[currency]):
+            raise ValueError("Amount exceeds the supported safe integer range")
         scaled = amount * (10 ** CURRENCY_EXPONENTS[currency])
         return int(scaled.quantize(Decimal(1), rounding=ROUND_HALF_UP))
 

@@ -681,3 +681,70 @@ def test_published_version_seals_are_immutable_and_prevent_unsafe_downgrade(
         command.downgrade(Config("alembic.ini"), "0004_vendor_ref")
     with Session(populated) as session:
         assert session.scalar(select(func.count()).select_from(ExtractionVersionSeal)) == before
+
+
+def test_partial_receipts_preserve_exact_quantities_and_original_orders(populated: Engine) -> None:
+    partial_orders = 0
+    with Session(populated) as session:
+        for spec in dataset()["purchase_orders"]:
+            po = session.get(PurchaseOrder, identity(spec["reference"]))
+            assert po is not None
+            received = session.scalars(
+                select(GoodsReceiptLine).where(GoodsReceiptLine.purchase_order_id == po.id)
+            ).all()
+            assert len(received) == len(po.financial_lines) == 2
+            fraction = Decimal(spec["receipt_fraction"])
+            partial_orders += fraction < 1
+            for line in po.financial_lines:
+                quantity = sum(
+                    (row.quantity for row in received if row.purchase_order_line_id == line.id),
+                    Decimal(0),
+                )
+                assert quantity == line.quantity * fraction
+                source = next(row for row in spec["lines"] if row["reference"] == line.reference)
+                assert line.quantity == Decimal(source["quantity"])
+                assert line.line_total_minor == source["line_total_minor"]
+        assert partial_orders == 20
+
+
+def test_concurrent_supplier_duplicates_commit_one_invoice_and_audit(
+    finance_engine: Engine,
+) -> None:
+    from threading import Barrier
+
+    vendor_id = uuid4().hex
+    with Session(finance_engine) as session, session.begin():
+        session.add(
+            Vendor(
+                id=vendor_id,
+                organization_id="demo",
+                code="SYN-CONCURRENT",
+                name="Synthetic concurrent",
+                normalized_name="synthetic concurrent",
+                default_currency="USD",
+            )
+        )
+    barrier = Barrier(2)
+
+    def insert_duplicate(index: int) -> str:
+        barrier.wait(timeout=5)
+        try:
+            with Session(finance_engine) as session, session.begin():
+                invoice = stub_invoice(
+                    organization_id="demo",
+                    vendor_id=vendor_id,
+                    supplier_invoice_number="same-001",
+                    normalized_invoice_number="SAME-001",
+                )
+                session.add(invoice)
+                session.flush()
+                audit_record(session, "demo", "synthetic-test", invoice.id, "created", {})
+            return "committed"
+        except IntegrityError:
+            return "duplicate"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        assert sorted(executor.map(insert_duplicate, range(2))) == ["committed", "duplicate"]
+    with Session(finance_engine) as session:
+        assert session.scalar(select(func.count()).select_from(Invoice)) == 1
+        assert session.scalar(select(func.count()).select_from(AuditEvent)) == 1

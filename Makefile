@@ -1,7 +1,7 @@
 UV := $(shell command -v uv 2>/dev/null || echo .tools/uv/bin/uv)
 export UV_CACHE_DIR := $(CURDIR)/.cache/uv
 
-.PHONY: fixtures fixtures-check seed-financial env install contracts contracts-check check format bootstrap bootstrap-lite dev api worker down
+.PHONY: fixtures fixtures-check seed-financial env install contracts contracts-check check reliability-check format bootstrap bootstrap-lite dev api worker down
 env:
 	python3 scripts/setup_env.py
 
@@ -22,7 +22,7 @@ check:
 	$(UV) run --all-packages ruff check .
 	$(UV) run --all-packages ruff format --check .
 	$(UV) run --all-packages mypy
-	$(UV) run --all-packages pytest --cov=reconcileiq_reconciliation --cov-fail-under=90
+	$(UV) run --all-packages pytest --cov=reconcileiq_reconciliation --cov-fail-under=100
 	$(MAKE) contracts-check
 	$(MAKE) fixtures-check
 	$(UV) run --all-packages reconcileiq-eval
@@ -30,6 +30,10 @@ check:
 	pnpm typecheck
 	pnpm test
 	pnpm format:check
+
+reliability-check:
+	RECONCILE_TEST_POSTGRES=1 RECONCILE_TEST_SERVICES=1 $(UV) run --all-packages pytest --cov=reconcileiq_reconciliation --cov=reconcileiq_worker --cov=reconcileiq_database.financial --cov-branch --cov-report=term-missing --cov-report=json:.cache/m05-coverage.json
+	$(UV) run --all-packages python scripts/check_reliability_coverage.py
 
 format:
 	$(UV) run --all-packages ruff check --fix .

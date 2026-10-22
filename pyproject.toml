@@ -23,6 +23,7 @@ dev = [
     "types-pyyaml>=6,<7",
     "httpx2>=2.16.0",
     "pypdf>=6,<7",
+    "hypothesis>=6.140,<7",
 ]
 
 [tool.ruff]
@@ -40,7 +41,7 @@ files = ["services", "packages/database/src", "packages/reconciliation/src", "pa
 exclude = ["migrations"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "kombu.*"]
+module = ["celery.*", "kombu.*", "billiard.*", "amqp.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
