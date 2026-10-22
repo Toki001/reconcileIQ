@@ -7,6 +7,7 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from reconcileiq_database.config import Settings
+from reconcileiq_database.financial import ensure_identity
 from reconcileiq_database.models import (
     AuditEvent,
     Credential,
@@ -29,7 +30,11 @@ def seed_contracts(engine: Engine, settings: Settings) -> None:
             if session.get(Credential, digest) is None:
                 session.add(
                     Credential(
-                        digest=digest, organization_id="demo", actor=f"local-{role}", role=role
+                        digest=digest,
+                        organization_id="demo",
+                        actor=f"local-{role}",
+                        role=role,
+                        user_id=ensure_identity(session, "demo", f"local-{role}", role),
                     )
                 )
                 session.add(

@@ -19,11 +19,34 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     engine = build_engine(get_settings())
-    with engine.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
-        with context.begin_transaction():
-            context.run_migrations()
-    engine.dispose()
+    try:
+        with engine.connect() as connection:
+            sqlite = connection.dialect.name == "sqlite"
+            if sqlite:
+                # SQLite batch rebuilds require FK checks off on this maintenance connection.
+                # Explicit BEGIN makes every DDL/backfill operation rollback together.
+                connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+                connection.commit()
+            try:
+                with connection.begin():
+                    if sqlite:
+                        connection.exec_driver_sql("BEGIN IMMEDIATE")
+                    context.configure(
+                        connection=connection,
+                        target_metadata=target_metadata,
+                        compare_type=True,
+                        transactional_ddl=True,
+                    )
+                    with context.begin_transaction():
+                        context.run_migrations()
+                    if sqlite and connection.exec_driver_sql("PRAGMA foreign_key_check").fetchone():
+                        raise RuntimeError("Migration would leave invalid foreign key references")
+            finally:
+                if sqlite:
+                    connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+                    connection.commit()
+    finally:
+        engine.dispose()
 
 
 if context.is_offline_mode():

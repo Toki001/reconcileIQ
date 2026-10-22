@@ -1,7 +1,7 @@
 UV := $(shell command -v uv 2>/dev/null || echo .tools/uv/bin/uv)
 export UV_CACHE_DIR := $(CURDIR)/.cache/uv
 
-.PHONY: env install contracts contracts-check check format bootstrap bootstrap-lite dev api worker down
+.PHONY: fixtures fixtures-check seed-financial env install contracts contracts-check check format bootstrap bootstrap-lite dev api worker down
 env:
 	python3 scripts/setup_env.py
 
@@ -24,6 +24,7 @@ check:
 	$(UV) run --all-packages mypy
 	$(UV) run --all-packages pytest --cov=reconcileiq_reconciliation --cov-fail-under=90
 	$(MAKE) contracts-check
+	$(MAKE) fixtures-check
 	$(UV) run --all-packages reconcileiq-eval
 	pnpm lint
 	pnpm typecheck
@@ -57,3 +58,12 @@ worker:
 
 down:
 	docker compose down
+
+fixtures:
+	$(UV) run --all-packages python scripts/financial_fixtures.py
+
+fixtures-check:
+	$(UV) run --all-packages python scripts/financial_fixtures.py --check
+
+seed-financial:
+	$(UV) run --all-packages python -m reconcileiq_database.financial_seed

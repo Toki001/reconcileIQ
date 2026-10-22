@@ -75,7 +75,11 @@ def new_job(
     )
     session.add(job)
     session.flush()
-    session.add(OutboxEvent(id=uuid4().hex, job_id=job.id, payload=payload))
+    session.add(
+        OutboxEvent(
+            id=uuid4().hex, organization_id=actor.organization_id, job_id=job.id, payload=payload
+        )
+    )
     audit(
         session,
         actor,

@@ -1,0 +1,91 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 634 >>
+stream
+BT
+/F1 11 Tf
+72 780 Td
+18 TL
+(SYNTHETIC FIXTURE - NO PAYMENT) Tj T*
+(Invoice SYN-16-0192) Tj T*
+(Vendor: Synthetic P Development Supplies) Tj T*
+(Invoice date: 2026-10-01    Due date: 2026-11-01) Tj T*
+(Purchase order: SYN-PO-0096) Tj T*
+(Currency: USD    Tax mode: inclusive) Tj T*
+(ITEM-1 | qty 5 | unit USD 35.10 | gross USD 175.50) Tj T*
+(ITEM-2 | qty 4.5 | unit USD 36.10 | gross USD 162.45) Tj T*
+(SUBTOTAL: USD 337.95) Tj T*
+(DISCOUNT: USD 0.00) Tj T*
+(TAX: USD 36.21) Tj T*
+(AMOUNT: USD 337.95) Tj T*
+(This document contains invented development data.) Tj T*
+(Financial correctness requires deterministic validation.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 290 >>
+stream
+BT
+/F1 11 Tf
+72 780 Td
+18 TL
+(SYNTHETIC CONTINUATION - NO PAYMENT) Tj T*
+(Invoice SYN-16-0192 - page 2) Tj T*
+(Supporting goods receipt and reference details for future OCR tests.) Tj T*
+(Scenario label: taxed) Tj T*
+(No goods were ordered, received or paid for in the real world.) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 290 >>
+stream
+BT
+/F1 11 Tf
+72 780 Td
+18 TL
+(SYNTHETIC CONTINUATION - NO PAYMENT) Tj T*
+(Invoice SYN-16-0192 - page 3) Tj T*
+(Supporting goods receipt and reference details for future OCR tests.) Tj T*
+(Scenario label: taxed) Tj T*
+(No goods were ordered, received or paid for in the real world.) Tj T*
+ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000133 00000 n 
+0000000203 00000 n 
+0000000329 00000 n 
+0000001014 00000 n 
+0000001140 00000 n 
+0000001481 00000 n 
+0000001607 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1948
+%%EOF

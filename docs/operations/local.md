@@ -1,10 +1,10 @@
 # Local operations
 
-Run `make env`, then `make bootstrap`. The bootstrap may be repeated safely. It does not overwrite `.env`, erase volumes or reset audit history. Alembic runs before API/worker readiness. The synthetic seed only inserts missing known IDs; it is not an import route for real data.
+Run `make env`, then `make bootstrap`. The bootstrap may be repeated safely. It does not overwrite `.env`, erase volumes or reset audit history. Alembic runs before API/worker readiness. The original demo seed inserts missing known IDs; the isolated financial seed checks its manifest and retained aggregate counts before returning without changes. Neither is an import route for real data. See [database operations](database.md) for the migration sequence, safe rollback example and fixture commands.
 
 ## Health and troubleshooting
 
-`/health/live` verifies the process. API `/health/ready` verifies the current migration revision (`0002_contracts`) and, in Compose, authenticated RabbitMQ connectivity plus MinIO HTTP health. It returns 503 with dependency states when unavailable. Web readiness follows API readiness. Database or network driver exceptions are never returned to callers. The worker has a broker ping health check; `scripts/worker_smoke.py` additionally exercises message delivery, persistence and duplicate suppression.
+`/health/live` verifies the process. API `/health/ready` verifies the current migration revision (`0005_evidence_seals`) and, in Compose, authenticated RabbitMQ connectivity plus MinIO HTTP health. It returns 503 with dependency states when unavailable. Web readiness follows API readiness. Database or network driver exceptions are never returned to callers. The worker has a broker ping health check; `scripts/worker_smoke.py` additionally exercises message delivery, persistence and duplicate suppression.
 
 Use `docker compose ps` first, followed by logs for the affected service. Avoid sharing raw Compose configuration or environment output, which can expose credentials. Do not rotate the generated passwords by deleting `.env` while keeping initialized volumes: PostgreSQL and RabbitMQ retain their original credentials. Use their administrative credential-rotation procedures if rotation is needed.
 

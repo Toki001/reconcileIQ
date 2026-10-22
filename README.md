@@ -2,7 +2,7 @@
 
 An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
 
-**Milestone 02** adds authenticated, tenant-scoped REST mutations and Strawberry GraphQL reads, reviewed OpenAPI 3.1/GraphQL contracts, generated TypeScript clients, signed cursor pagination, upload verification, optimistic concurrency, idempotency and audit trails. The dashboard retains its six working synthetic pages and uses a server-held auditor key. Accepted asynchronous jobs are durable `pending_dispatch` admissions; business processing workers and full matching come later. Payments are prohibited.
+**Milestone 03** adds normalized financial data, tenant-composite constraints, exact tax/discount validation, immutable extraction evidence, nondestructive PostgreSQL migrations and an isolated synthetic dataset of 20 vendors, 100 purchase orders and 200 invoices with PDF fixtures. Existing authenticated REST/GraphQL contracts, generated clients and the six-page dashboard remain compatible. Durable jobs stay `pending_dispatch`; business processing begins in a later milestone. Payments are prohibited.
 
 See the [complete API contract guide](packages/contracts/README.md) for roles, money, pagination, webhook signatures, errors and retry semantics.
 
@@ -27,7 +27,7 @@ The Makefile automatically uses `.tools/uv/bin/uv` when `uv` is absent from PATH
 make bootstrap
 ```
 
-This generates `.env` with random local credentials and mode `0600`, installs both frozen workspaces, builds non-root application images, starts the infrastructure, migrates PostgreSQL, seeds six invoices and six POs with audit events, waits for readiness, then delivers an idempotent probe through RabbitMQ. Repeating bootstrap preserves data and secrets.
+This generates `.env` with random local credentials and mode `0600`, installs both frozen workspaces, builds non-root application images, starts the infrastructure, migrates PostgreSQL, preserves the six-invoice/six-PO demo and adds the separate financial fixture organization with audit events, waits for readiness, then delivers an idempotent probe through RabbitMQ. Repeating bootstrap preserves data and secrets.
 
 | Service                  | Local URL                                                              |
 | ------------------------ | ---------------------------------------------------------------------- |
@@ -64,6 +64,10 @@ pnpm build                 # Production frontend build
 make format                # Apply Python and frontend formatting
 make contracts             # Export REST contract and regenerate REST/GraphQL clients
 make contracts-check       # Detect served schema and both generated client drifts
+make fixtures-check        # Verify 200 deterministic PDFs and their ground-truth manifest
+make seed-financial        # Idempotent isolated financial seed in the configured database
+RECONCILE_TEST_POSTGRES=1 make check  # Include isolated real-PostgreSQL integration cases
+uv run --all-packages python scripts/postgres_m03_smoke.py
 # Optional real-browser checks against the running stack:
 pnpm exec playwright install chromium
 pnpm test:e2e
@@ -80,7 +84,7 @@ apps/web/                  Next.js App Router, TypeScript, Tailwind, Jest
 services/api/              FastAPI REST mutations, Strawberry GraphQL reads, auth
 services/worker/           Celery orchestration and idempotent bootstrap probe
 packages/database/         Pydantic settings, SQLAlchemy models, Alembic, synthetic seed
-packages/reconciliation/   Pure deterministic money utilities
+packages/reconciliation/   Pure deterministic money, tax, discount and tolerance rules
 packages/contracts/        Reviewed OpenAPI 3.1, GraphQL SDL and operations
 packages/generated/        Generated REST/GraphQL TypeScript and typed clients
 packages/ai/               Untrusted extraction schema, offline eval harness and fixtures
@@ -90,4 +94,4 @@ infra/docker/              Non-root application and pinned-source MinIO images
 docs/                      Architecture, local operations and verification evidence
 ```
 
-Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for the initial results and [milestone 02 verification](docs/verification/milestone-02.md) for current evidence. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.
+Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for the initial results and [milestone 02 verification](docs/verification/milestone-02.md) for API evidence. See [financial persistence](docs/architecture/database.md), [migration/seed operations](docs/operations/database.md) and [milestone 03 verification](docs/verification/milestone-03.md) for current evidence. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.

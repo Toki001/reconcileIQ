@@ -20,7 +20,9 @@ def main() -> None:
             before = session.scalar(select(func.count()).select_from(AuditEvent))
             assert (
                 session.scalar(
-                    select(func.count()).select_from(Invoice).where(Invoice.synthetic.is_(True))
+                    select(func.count())
+                    .select_from(Invoice)
+                    .where(Invoice.synthetic.is_(True), Invoice.organization_id == "demo")
                 )
                 == 6
             )

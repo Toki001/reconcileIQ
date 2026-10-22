@@ -23,7 +23,10 @@ test("all finance pages read the running API and render real record details", as
   await page
     .getByRole("textbox", { name: "Search audit events" })
     .fill("INV-1043");
-  await expect(page.getByText("INV-1043", { exact: true })).toBeVisible();
+  // A retained invoice can have several audit events after a migration or review.
+  await expect(
+    page.getByText("INV-1043", { exact: true }).first(),
+  ).toBeVisible();
   await page.goto("/invoices");
   await page.getByRole("textbox", { name: "Search invoices" }).fill("Acme");
   await expect(page.getByText("Northstar Studio", { exact: true })).toHaveCount(

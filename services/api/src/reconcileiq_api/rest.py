@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Header, Query
 from fastapi.responses import JSONResponse
 from reconcileiq_database.config import Settings
+from reconcileiq_database.financial import normalize_po, normalize_receipt
 from reconcileiq_database.models import (
     GoodsReceipt,
     Invoice,
@@ -282,6 +283,7 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
             )
             session.add(po)
             session.flush()
+            normalize_po(session, po, actor.actor)
             audit(
                 session,
                 actor,
@@ -405,6 +407,7 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
             )
             session.add(row)
             session.flush()
+            normalize_receipt(session, row, actor.actor)
             audit(
                 session,
                 actor,
@@ -528,6 +531,7 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
                 decision=body.decision,
                 reason=body.reason,
                 actor=actor.actor,
+                user_id=actor.user_id,
             )
             row.version += 1
             session.add(decision)

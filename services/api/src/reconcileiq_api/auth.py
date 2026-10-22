@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from reconcileiq_database.models import Credential
+from reconcileiq_database.models import Credential, Membership, User
 from sqlalchemy.orm import Session
 
 from reconcileiq_api.errors import ApiError
@@ -22,6 +22,7 @@ class Principal:
     organization_id: str
     actor: str
     role: Role
+    user_id: str | None = None
 
 
 bearer = HTTPBearer(
@@ -46,7 +47,12 @@ def authenticate(
         row = session.get(Credential, digest)
         if row is None or row.revoked or row.role not in Role:
             raise ApiError(401, "UNAUTHENTICATED", "A valid bearer credential is required.")
-        return Principal(row.organization_id, row.actor, Role(row.role))
+        if row.user_id is not None:
+            user = session.get(User, row.user_id)
+            membership = session.get(Membership, (row.organization_id, row.user_id))
+            if user is None or not user.active or membership is None or not membership.active:
+                raise ApiError(401, "UNAUTHENTICATED", "A valid bearer credential is required.")
+        return Principal(row.organization_id, row.actor, Role(row.role), row.user_id)
 
 
 Actor = Annotated[Principal, Depends(authenticate)]

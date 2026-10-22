@@ -1,0 +1,71 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 632 >>
+stream
+BT
+/F1 11 Tf
+48 780 Td
+18 TL
+(SYNTHETIC FIXTURE - NO PAYMENT) Tj T*
+(Invoice SYN-03-0125) Tj T*
+(Vendor: Synthetic C Development Supplies) Tj T*
+(Invoice date: 2026-10-01    Due date: 2026-11-01) Tj T*
+(Purchase order: SYN-PO-0063) Tj T*
+(Currency: PHP    Tax mode: exclusive) Tj T*
+(ITEM-1 | qty 5.5 | unit PHP 22.06 | gross PHP 121.33) Tj T*
+(ITEM-2 | qty 4 | unit PHP 23.06 | gross PHP 92.24) Tj T*
+(SUBTOTAL: PHP 213.57) Tj T*
+(DISCOUNT: PHP 0.00) Tj T*
+(TAX: PHP 0.00) Tj T*
+(AMOUNT: PHP 213.58) Tj T*
+(This document contains invented development data.) Tj T*
+(Financial correctness requires deterministic validation.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 298 >>
+stream
+BT
+/F1 11 Tf
+48 780 Td
+18 TL
+(SYNTHETIC CONTINUATION - NO PAYMENT) Tj T*
+(Invoice SYN-03-0125 - page 2) Tj T*
+(Supporting goods receipt and reference details for future OCR tests.) Tj T*
+(Scenario label: invalid_total) Tj T*
+(No goods were ordered, received or paid for in the real world.) Tj T*
+ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000000323 00000 n 
+0000001006 00000 n 
+0000001132 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1481
+%%EOF

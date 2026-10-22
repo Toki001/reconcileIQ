@@ -20,7 +20,7 @@ def main() -> None:
         deadline = time.monotonic() + 25
         while time.monotonic() < deadline:
             with Session(engine) as session:
-                if session.get(JobExecution, key):
+                if session.get(JobExecution, ("demo", key)):
                     break
             time.sleep(0.25)
         else:
@@ -34,7 +34,7 @@ def main() -> None:
         probe_task.delay(barrier)
         while time.monotonic() < deadline:
             with Session(engine) as session:
-                if session.get(JobExecution, barrier):
+                if session.get(JobExecution, ("demo", barrier)):
                     count = session.scalar(
                         select(func.count())
                         .select_from(AuditEvent)

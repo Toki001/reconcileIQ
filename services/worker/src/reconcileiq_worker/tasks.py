@@ -34,7 +34,7 @@ def record_probe(key: str, engine: Engine) -> str:
             )
     except IntegrityError:
         with Session(engine) as session:
-            existing = session.get(JobExecution, key)
+            existing = session.get(JobExecution, ("demo", key))
             if existing is None:
                 raise
             return existing.result

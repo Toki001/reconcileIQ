@@ -13,3 +13,4 @@ packages/ai/evals/*.jsonl
 **/node_modules
 **/coverage
 *.py
+tests/fixtures/financial/manifest.json

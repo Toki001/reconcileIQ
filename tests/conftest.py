@@ -34,3 +34,24 @@ def engine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Engine]:
     yield database
     database.dispose()
     get_settings.cache_clear()
+
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def finance_engine(
+    request: pytest.FixtureRequest, engine: Engine, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Engine]:
+    if request.param == "sqlite":
+        yield engine
+        return
+    import os
+
+    from reconcileiq_database.testing import postgres_schema
+
+    if os.environ.get("RECONCILE_TEST_POSTGRES") != "1":
+        pytest.skip("Set RECONCILE_TEST_POSTGRES=1 to run isolated PostgreSQL integration cases")
+    with postgres_schema() as (database, url):
+        monkeypatch.setenv("RECONCILE_DATABASE_URL", url.render_as_string(hide_password=False))
+        get_settings.cache_clear()
+        command.upgrade(Config("alembic.ini"), "head")
+        yield database
+        get_settings.cache_clear()

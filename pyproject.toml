@@ -22,6 +22,7 @@ dev = [
     "pyyaml>=6,<7",
     "types-pyyaml>=6,<7",
     "httpx2>=2.16.0",
+    "pypdf>=6,<7",
 ]
 
 [tool.ruff]
@@ -44,7 +45,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --tb=short"
 filterwarnings = ["error"]
 
 [tool.coverage.run]

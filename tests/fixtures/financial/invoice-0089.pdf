@@ -1,0 +1,71 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 637 >>
+stream
+BT
+/F1 11 Tf
+48 780 Td
+18 TL
+(SYNTHETIC FIXTURE - NO PAYMENT) Tj T*
+(Invoice SYN-05-0089) Tj T*
+(Vendor: Synthetic E Development Supplies) Tj T*
+(Invoice date: 2026-10-01    Due date: 2026-11-01) Tj T*
+(Purchase order: SYN-PO-0045) Tj T*
+(Currency: KWD    Tax mode: exclusive) Tj T*
+(ITEM-1 | qty 2 | unit KWD 24.044 | gross KWD 48.088) Tj T*
+(ITEM-2 | qty 2 | unit KWD 25.044 | gross KWD 50.088) Tj T*
+(SUBTOTAL: KWD 98.176) Tj T*
+(DISCOUNT: KWD 0.000) Tj T*
+(TAX: KWD 14.726) Tj T*
+(AMOUNT: KWD 112.902) Tj T*
+(This document contains invented development data.) Tj T*
+(Financial correctness requires deterministic validation.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 300 >>
+stream
+BT
+/F1 11 Tf
+48 780 Td
+18 TL
+(SYNTHETIC CONTINUATION - NO PAYMENT) Tj T*
+(Invoice SYN-05-0089 - page 2) Tj T*
+(Supporting goods receipt and reference details for future OCR tests.) Tj T*
+(Scenario label: tax_discrepancy) Tj T*
+(No goods were ordered, received or paid for in the real world.) Tj T*
+ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000000323 00000 n 
+0000001011 00000 n 
+0000001137 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1488
+%%EOF

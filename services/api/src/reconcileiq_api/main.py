@@ -16,6 +16,7 @@ from reconcileiq_database.session import build_engine
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 from starlette.exceptions import HTTPException
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
@@ -195,6 +196,12 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
             ),
         )
 
+    @app.exception_handler(StaleDataError)
+    async def stale_record(request: Request, exc: StaleDataError) -> JSONResponse:
+        return problem(
+            request, ApiError(409, "VERSION_CONFLICT", "Record version changed; read and retry.")
+        )
+
     @app.exception_handler(SQLAlchemyError)
     async def database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
         return problem(
@@ -226,7 +233,7 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
                 revision = connection.execute(
                     text("SELECT version_num FROM alembic_version")
                 ).scalar()
-            dependencies["database"] = "ok" if revision == "0002_contracts" else "unavailable"
+            dependencies["database"] = "ok" if revision == "0005_evidence_seals" else "unavailable"
         except SQLAlchemyError:
             dependencies["database"] = "unavailable"
         for service in ("rabbitmq", "minio"):

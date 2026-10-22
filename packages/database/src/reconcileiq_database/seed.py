@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from reconcileiq_database.config import get_settings
 from reconcileiq_database.contract_seed import seed_contracts
+from reconcileiq_database.financial_seed import seed_financial
 from reconcileiq_database.models import AuditEvent, Invoice, PurchaseOrder
 from reconcileiq_database.session import build_engine
 
@@ -99,6 +100,7 @@ def main() -> None:
     try:
         seed_demo(engine)
         seed_contracts(engine, get_settings())
+        seed_financial(engine)
     finally:
         engine.dispose()
     print("Synthetic workspace seeded (idempotent).")

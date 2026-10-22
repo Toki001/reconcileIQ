@@ -1,0 +1,2 @@
+# Preserve fixed-width PDF records and keep generated document diffs binary.
+tests/fixtures/financial/*.pdf binary

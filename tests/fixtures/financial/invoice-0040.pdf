@@ -1,0 +1,51 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 641 >>
+stream
+BT
+/F1 11 Tf
+72 780 Td
+18 TL
+(SYNTHETIC FIXTURE - NO PAYMENT) Tj T*
+(Invoice SYN-20-0040) Tj T*
+(Vendor: Synthetic T Development Supplies) Tj T*
+(Invoice date: 2026-10-01    Due date: 2026-11-01) Tj T*
+(Purchase order: SYN-PO-0020) Tj T*
+(Currency: KWD    Tax mode: inclusive) Tj T*
+(ITEM-1 | qty 2.5 | unit KWD 39.019 | gross KWD 97.548) Tj T*
+(ITEM-2 | qty 3 | unit KWD 40.019 | gross KWD 120.057) Tj T*
+(SUBTOTAL: KWD 217.605) Tj T*
+(DISCOUNT: KWD 0.000) Tj T*
+(TAX: KWD 23.315) Tj T*
+(AMOUNT: KWD 217.605) Tj T*
+(This document contains invented development data.) Tj T*
+(Financial correctness requires deterministic validation.) Tj T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000191 00000 n 
+0000000317 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1009
+%%EOF
