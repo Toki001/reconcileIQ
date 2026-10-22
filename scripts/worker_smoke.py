@@ -27,8 +27,8 @@ def main() -> None:
             raise SystemExit(
                 "Worker probe timed out. Inspect worker state and broker availability."
             )
-        # Send a third copy and wait for an ordering barrier in a second key. The
-        # compose smoke worker uses concurrency=1 to make the barrier conclusive.
+        # Send a third copy and a consumer-activity marker. Four worker processes
+        # may overlap; transactional key uniqueness protects every duplicate.
         probe_task.delay(key)
         barrier = f"barrier-{uuid4().hex}"
         probe_task.delay(barrier)

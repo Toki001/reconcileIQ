@@ -185,6 +185,7 @@ class Job(Base):
     invoice_id: Mapped[str | None] = mapped_column(ForeignKey("invoices.id"))
     kind: Mapped[str] = mapped_column(String(32))
     state: Mapped[str] = mapped_column(String(32), default="pending_dispatch")
+    stage: Mapped[str] = mapped_column(String(32), default="admitted", server_default="admitted")
     version: Mapped[int] = mapped_column(Integer, default=1)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     error_code: Mapped[str | None] = mapped_column(String(64))

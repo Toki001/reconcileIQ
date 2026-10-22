@@ -2,7 +2,7 @@
 
 An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
 
-**Milestone 03** adds normalized financial data, tenant-composite constraints, exact tax/discount validation, immutable extraction evidence, nondestructive PostgreSQL migrations and an isolated synthetic dataset of 20 vendors, 100 purchase orders and 200 invoices with PDF fixtures. Existing authenticated REST/GraphQL contracts, generated clients and the six-page dashboard remain compatible. Durable jobs stay `pending_dispatch`; business processing begins in a later milestone. Payments are prohibited.
+**Milestone 04** runs reliable asynchronous digital-PDF text processing through Celery, RabbitMQ, MinIO and PostgreSQL. Confirmed outbox dispatch, recovery leases, five-attempt retries, durable failure records and audited admin replay replace pending-only admission. The Invoices page shows persistent processing states. Captured text stays untrusted; financial fields, matching, OCR and AI extraction are later work. Existing financial models, fixtures, authenticated APIs and generated clients remain compatible. Payments are prohibited.
 
 See the [complete API contract guide](packages/contracts/README.md) for roles, money, pagination, webhook signatures, errors and retry semantics.
 
@@ -27,7 +27,7 @@ The Makefile automatically uses `.tools/uv/bin/uv` when `uv` is absent from PATH
 make bootstrap
 ```
 
-This generates `.env` with random local credentials and mode `0600`, installs both frozen workspaces, builds non-root application images, starts the infrastructure, migrates PostgreSQL, preserves the six-invoice/six-PO demo and adds the separate financial fixture organization with audit events, waits for readiness, then delivers an idempotent probe through RabbitMQ. Repeating bootstrap preserves data and secrets.
+This generates `.env` with random local credentials and mode `0600`, installs both frozen workspaces, builds non-root application images, starts the infrastructure, migrates PostgreSQL, preserves the six-invoice/six-PO demo and adds the separate financial fixture organization with audit events, waits for readiness, then delivers an idempotent probe through RabbitMQ. The four-process worker also runs the recoverable business publisher; accepted digital PDF uploads now process automatically. Repeating bootstrap preserves data and secrets.
 
 | Service                  | Local URL                                                              |
 | ------------------------ | ---------------------------------------------------------------------- |
@@ -66,6 +66,7 @@ make contracts             # Export REST contract and regenerate REST/GraphQL cl
 make contracts-check       # Detect served schema and both generated client drifts
 make fixtures-check        # Verify 200 deterministic PDFs and their ground-truth manifest
 make seed-financial        # Idempotent isolated financial seed in the configured database
+docker compose exec -T worker python -m reconcileiq_worker.status
 RECONCILE_TEST_POSTGRES=1 make check  # Include isolated real-PostgreSQL integration cases
 uv run --all-packages python scripts/postgres_m03_smoke.py
 # Optional real-browser checks against the running stack:
@@ -82,7 +83,7 @@ Python equivalents use `uv run --all-packages <command>`. Do not omit `--all-pac
 ```text
 apps/web/                  Next.js App Router, TypeScript, Tailwind, Jest
 services/api/              FastAPI REST mutations, Strawberry GraphQL reads, auth
-services/worker/           Celery orchestration and idempotent bootstrap probe
+services/worker/           Celery digital-text processing, outbox recovery and idempotent probe
 packages/database/         Pydantic settings, SQLAlchemy models, Alembic, synthetic seed
 packages/reconciliation/   Pure deterministic money, tax, discount and tolerance rules
 packages/contracts/        Reviewed OpenAPI 3.1, GraphQL SDL and operations
@@ -94,4 +95,4 @@ infra/docker/              Non-root application and pinned-source MinIO images
 docs/                      Architecture, local operations and verification evidence
 ```
 
-Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for the initial results and [milestone 02 verification](docs/verification/milestone-02.md) for API evidence. See [financial persistence](docs/architecture/database.md), [migration/seed operations](docs/operations/database.md) and [milestone 03 verification](docs/verification/milestone-03.md) for current evidence. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.
+Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries, [architecture](docs/architecture/overview.md) for ownership, and [milestone verification](docs/verification/milestone-01.md) for the initial results and [milestone 02 verification](docs/verification/milestone-02.md) for API evidence. See [financial persistence](docs/architecture/database.md), [migration/seed operations](docs/operations/database.md) and [milestone 03 verification](docs/verification/milestone-03.md) for financial evidence. See the [processing runbook](docs/operations/processing.md) and [milestone 04 verification](docs/verification/milestone-04.md) for current operation and measured results. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.

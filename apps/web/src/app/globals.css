@@ -1489,3 +1489,39 @@ tr:last-child td {
     scroll-behavior: auto !important;
   }
 }
+.processing-panel {
+  margin: 0 36px 32px;
+}
+.processing-panel .status-failed {
+  color: #9e3b31;
+  background: #fcecea;
+}
+.processing-panel .status-pending_dispatch,
+.processing-panel .status-queued,
+.processing-panel .status-running {
+  color: #365d82;
+  background: #edf3fa;
+}
+.processing-content {
+  padding: 0 24px 20px;
+}
+.processing-content td {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  max-width: 28rem;
+}
+.processing-code {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+.processing-pagination {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+@media (max-width: 640px) {
+  .processing-panel {
+    margin-inline: 16px;
+  }
+}

@@ -54,7 +54,7 @@ api:
 	$(UV) run --all-packages uvicorn reconcileiq_api.main:app --host 127.0.0.1 --port 8000 --reload
 
 worker:
-	$(UV) run --all-packages celery -A reconcileiq_worker.app:celery_app worker --loglevel=WARNING --concurrency=4
+	RECONCILE_WORKER_ENABLED=true $(UV) run --all-packages celery -A reconcileiq_worker.app:celery_app worker --loglevel=WARNING
 
 down:
 	docker compose down

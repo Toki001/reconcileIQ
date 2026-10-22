@@ -15,9 +15,11 @@ docker compose run --rm migrate
 docker compose exec -T api python -m alembic current
 ```
 
-Head is `0005_evidence_seals`. The preserved `0001_foundation` and `0002_contracts` revisions are unchanged. `0003_financial` adds the normalized financial model, tenant constraints, exact arithmetic checks, immutable evidence and recovery structures. It backfills organization/vendor/membership relationships, existing PO/receipt line details and outbox tenant keys, recording new audit events while preserving original rows. Existing invoice summaries remain legacy until complete validated extraction evidence is available.
+Head is `0006_processing_stage`. The preserved `0001_foundation` and `0002_contracts` revisions are unchanged. `0003_financial` adds the normalized financial model, tenant constraints, exact arithmetic checks, immutable evidence and recovery structures. It backfills organization/vendor/membership relationships, existing PO/receipt line details and outbox tenant keys, recording new audit events while preserving original rows. Existing invoice summaries remain legacy until complete validated extraction evidence is available.
 
 Revision `0005_evidence_seals` adds retained publication seals and guards superseded versions against appended lines/fields. Existing validated versions are conservatively sealed. Its downgrade is allowed only before any version has been sealed; otherwise it refuses to discard history.
+
+Revision `0006_processing_stage` adds only the non-financial `jobs.stage` projection with a safe default. Its downgrade removes that projection while retaining audit transitions. Existing revisions and financial evidence are unchanged.
 
 Both empty installs and populated milestone 02 upgrades are verified. PostgreSQL applies each migration transactionally. SQLite batch reconstruction uses a dedicated maintenance connection with foreign-key enforcement temporarily disabled, an explicit transaction covering DDL/backfill, and a final `foreign_key_check` before commit; application connections retain FK enforcement. An exception rolls back the migration. Do not run application writes concurrently with SQLite migrations.
 

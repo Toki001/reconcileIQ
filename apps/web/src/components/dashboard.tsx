@@ -632,7 +632,7 @@ export function Dashboard({
       {section === "audit-log" && (
         <Panel
           title="Record history"
-          subtitle="Append-only events, written atomically with each seeded record"
+          subtitle="Recent activity with audit context for visible financial records"
         >
           <div className="table-toolbar">
             <label className="search-input">
@@ -678,7 +678,7 @@ export function Dashboard({
             )}
           </div>
           <div className="table-footer">
-            {events.length} events shown · Latest 100 maximum
+            {events.length} events shown · Up to 100 context events
           </div>
         </Panel>
       )}

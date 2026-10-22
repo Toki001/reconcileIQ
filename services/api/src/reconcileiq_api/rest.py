@@ -17,7 +17,7 @@ from reconcileiq_database.models import (
     ReviewDecision,
     utcnow,
 )
-from sqlalchemy import Engine, select
+from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
 
 from reconcileiq_api.auth import Actor, Principal, require_writer
@@ -26,6 +26,8 @@ from reconcileiq_api.contracts import (
     InvoicePage,
     JobAccepted,
     JobRead,
+    ProcessingJobPage,
+    ProcessingJobRead,
     PurchaseOrderCreate,
     PurchaseOrderDetail,
     PurchaseOrderPage,
@@ -93,6 +95,23 @@ def accepted(job: Job, reconciliation_id: str | None = None) -> Mutation:
         ),
         location,
     )
+
+
+def job_next_action(job: Job) -> str:
+    if job.state == "succeeded":
+        return (
+            "Digital text captured as untrusted evidence; "
+            "financial extraction/review is still required."
+        )
+    if job.state == "failed":
+        return (
+            "Admin may repair the dependency and replay with a reason."
+            if job.retryable
+            else "Correct the document and submit a new upload; this job cannot be replayed."
+        )
+    if job.stage == "retrying":
+        return "A bounded retry is scheduled; no action is required."
+    return "Processing is pending or in progress. Poll this resource."
 
 
 def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRouter:
@@ -558,7 +577,57 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
     @router.get("/jobs/{job_id}", response_model=JobRead, operation_id="getJob", tags=["jobs"])
     def job_state(job_id: str, actor: Actor) -> JobRead:
         with Session(engine) as session:
-            return JobRead.model_validate(owned(session, Job, job_id, actor))
+            row = owned(session, Job, job_id, actor)
+            return JobRead.model_validate(row).model_copy(
+                update={"next_action": job_next_action(row)}
+            )
+
+    @router.get(
+        "/processing-jobs",
+        response_model=ProcessingJobPage,
+        operation_id="listProcessingJobs",
+        tags=["jobs"],
+        description=(
+            "Tenant-scoped digital invoice jobs with stable cursor pagination "
+            "and durable backlog counts."
+        ),
+    )
+    def processing_jobs(
+        actor: Actor, first: PageSize = 20, after: str | None = None
+    ) -> ProcessingJobPage:
+        with Session(engine) as session:
+            page = paginate(
+                session,
+                Job,
+                actor,
+                settings,
+                first=first,
+                after=after,
+                scope="processing-jobs",
+                conditions=[Job.kind == "extraction"],
+            )
+            count = (
+                session.scalar(
+                    select(func.count())
+                    .select_from(Job)
+                    .where(
+                        Job.organization_id == actor.organization_id,
+                        Job.state.in_(["pending_dispatch", "queued", "running"]),
+                    )
+                )
+                or 0
+            )
+            return ProcessingJobPage(
+                items=[
+                    ProcessingJobRead.model_validate(row).model_copy(
+                        update={"next_action": job_next_action(row)}
+                    )
+                    for row in page.rows
+                ],
+                page_info=page.info,
+                active_count=count,
+                admission_limit=settings.admitted_job_limit,
+            )
 
     @router.post(
         "/jobs/{job_id}/replay",

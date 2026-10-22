@@ -1,6 +1,9 @@
 from celery import Celery
 from reconcileiq_database.config import get_settings
 
+from reconcileiq_worker import logging as safe_logging  # noqa: F401
+from reconcileiq_worker.dispatch import INVOICE_QUEUE, PROBE_QUEUE, RecoveryService
+
 celery_app = Celery("reconcileiq", broker=get_settings().broker_url.get_secret_value())
 celery_app.conf.update(
     imports=("reconcileiq_worker.tasks",),
@@ -11,6 +14,20 @@ celery_app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     worker_prefetch_multiplier=1,
+    worker_concurrency=get_settings().worker_concurrency,
+    worker_max_tasks_per_child=50,
+    worker_max_memory_per_child=256000,
+    task_queues=(INVOICE_QUEUE, PROBE_QUEUE),
+    task_default_queue=PROBE_QUEUE.name,
+    task_default_exchange="reconcileiq.tasks",
+    task_default_routing_key="probe",
+    task_routes={
+        "reconcileiq.process_invoice": {"queue": INVOICE_QUEUE.name, "routing_key": "invoice"}
+    },
+    task_default_delivery_mode="persistent",
+    broker_transport_options={"confirm_publish": True},
+    broker_heartbeat=30,
+    task_acks_on_failure_or_timeout=False,
     # RabbitMQ 4.3 rejects transient, non-exclusive queues. Control/event
     # queues are connection-local; business task queues remain durable.
     control_queue_exclusive=True,
@@ -24,6 +41,7 @@ celery_app.conf.update(
         "interval_step": 1,
         "interval_max": 2,
     },
-    task_soft_time_limit=20,
-    task_time_limit=30,
+    task_soft_time_limit=40,
+    task_time_limit=60,
 )
+celery_app.steps["worker"].add(RecoveryService)

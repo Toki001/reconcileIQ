@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from reconcileiq_database.config import get_settings
 from reconcileiq_database.models import (
     AuditEvent,
     IdempotencyRecord,
@@ -63,8 +64,8 @@ def new_job(
             Job.state.in_(["pending_dispatch", "queued", "running"]),
         )
     )
-    if count is not None and count >= 500:
-        raise ApiError(429, "ADMISSION_LIMIT", "The organization has 500 active jobs. Retry later.")
+    if count is not None and count >= get_settings().admitted_job_limit:
+        raise ApiError(429, "ADMISSION_LIMIT", "The organization has reached its active job limit.")
     job = Job(
         id=uuid4().hex,
         organization_id=actor.organization_id,

@@ -6,6 +6,8 @@ export { createGraphqlClient, GraphQLRequestError } from "./graphql-client";
 export type Snapshot = components["schemas"]["DashboardSnapshot"];
 export type Invoice = components["schemas"]["InvoiceRead"];
 export type PurchaseOrder = components["schemas"]["PurchaseOrderRead"];
+export type ProcessingJob = components["schemas"]["ProcessingJobRead"];
+export type ProcessingJobPage = components["schemas"]["ProcessingJobPage"];
 
 export function createApi(
   baseUrl: string,

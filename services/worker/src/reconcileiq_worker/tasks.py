@@ -57,3 +57,23 @@ probe_task = celery_app.task(
     retry_backoff=True,
     retry_jitter=True,
 )(run_probe)
+
+
+def run_invoice(organization_id: str, job_id: str) -> None:
+    from reconcileiq_worker.processing import process_job
+
+    settings = get_settings()
+    engine = build_engine(settings)
+    try:
+        process_job(engine, settings, organization_id, job_id)
+    except Exception:
+        # A database outage leaves a durable running lease (or pending admission).
+        # Recovery reclaims it; Celery must not dump a credential-bearing traceback.
+        return
+    finally:
+        engine.dispose()
+
+
+invoice_task = celery_app.task(
+    name="reconcileiq.process_invoice", acks_late=True, reject_on_worker_lost=True
+)(run_invoice)

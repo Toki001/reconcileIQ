@@ -13,7 +13,7 @@ from reconcileiq_database.config import Settings, get_settings
 from reconcileiq_database.models import AuditEvent, Invoice, PurchaseOrder
 from reconcileiq_database.seed import SAMPLE_DATE
 from reconcileiq_database.session import build_engine
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -26,6 +26,7 @@ from strawberry.fastapi import GraphQLRouter
 from reconcileiq_api.auth import Actor
 from reconcileiq_api.errors import ERROR_RESPONSES, ApiError, ApiProblem, FieldError
 from reconcileiq_api.graphql import Context, schema
+from reconcileiq_api.pagination import utc
 from reconcileiq_api.rest import build_router
 from reconcileiq_api.schemas import (
     AuditRead,
@@ -233,7 +234,9 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
                 revision = connection.execute(
                     text("SELECT version_num FROM alembic_version")
                 ).scalar()
-            dependencies["database"] = "ok" if revision == "0005_evidence_seals" else "unavailable"
+            dependencies["database"] = (
+                "ok" if revision == "0006_processing_stage" else "unavailable"
+            )
         except SQLAlchemyError:
             dependencies["database"] = "unavailable"
         for service in ("rabbitmq", "minio"):
@@ -276,38 +279,72 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
     )
     def snapshot(actor: Actor) -> DashboardSnapshot:
         with Session(engine) as session:
+            invoices = list(
+                session.scalars(
+                    select(Invoice)
+                    .where(
+                        Invoice.organization_id == actor.organization_id,
+                        Invoice.synthetic.is_(True),
+                    )
+                    .order_by(Invoice.id)
+                    .limit(100)
+                )
+            )
+            orders = list(
+                session.scalars(
+                    select(PurchaseOrder)
+                    .where(PurchaseOrder.organization_id == actor.organization_id)
+                    .order_by(PurchaseOrder.id)
+                    .limit(100)
+                )
+            )
+            # Worker traffic must not erase the audit context of visible finance records.
+            # Reserve one real event per visible entity, then fill with recent activity.
+            visible = [row.id for row in invoices] + [row.id for row in orders]
+            ranked = (
+                select(
+                    AuditEvent.id,
+                    func.row_number()
+                    .over(
+                        partition_by=AuditEvent.entity_id,
+                        order_by=(AuditEvent.occurred_at.desc(), AuditEvent.id),
+                    )
+                    .label("position"),
+                )
+                .where(
+                    AuditEvent.organization_id == actor.organization_id,
+                    AuditEvent.entity_id.in_(visible),
+                )
+                .subquery()
+            )
+            context = list(
+                session.scalars(
+                    select(AuditEvent)
+                    .join(ranked, ranked.c.id == AuditEvent.id)
+                    .where(ranked.c.position == 1)
+                    .order_by(AuditEvent.occurred_at.desc(), AuditEvent.id)
+                    .limit(100)
+                )
+            )
+            recent = session.scalars(
+                select(AuditEvent)
+                .where(AuditEvent.organization_id == actor.organization_id)
+                .order_by(AuditEvent.occurred_at.desc(), AuditEvent.id)
+                .limit(100)
+            )
+            selected = {row.id: row for row in context}
+            for row in recent:
+                if len(selected) >= 100:
+                    break
+                selected.setdefault(row.id, row)
+            history = sorted(
+                selected.values(), key=lambda row: (-utc(row.occurred_at).timestamp(), row.id)
+            )
             return DashboardSnapshot(
                 as_of=SAMPLE_DATE,
-                invoices=[
-                    InvoiceRead.model_validate(row)
-                    for row in session.scalars(
-                        select(Invoice)
-                        .where(
-                            Invoice.organization_id == actor.organization_id,
-                            Invoice.synthetic.is_(True),
-                        )
-                        .order_by(Invoice.id)
-                        .limit(100)
-                    )
-                ],
-                purchase_orders=[
-                    PurchaseOrderRead.model_validate(row)
-                    for row in session.scalars(
-                        select(PurchaseOrder)
-                        .where(PurchaseOrder.organization_id == actor.organization_id)
-                        .order_by(PurchaseOrder.id)
-                        .limit(100)
-                    )
-                ],
-                audit_events=[
-                    AuditRead.model_validate(row)
-                    for row in session.scalars(
-                        select(AuditEvent)
-                        .where(AuditEvent.organization_id == actor.organization_id)
-                        .order_by(AuditEvent.occurred_at.desc(), AuditEvent.id)
-                        .limit(100)
-                    )
-                ],
+                invoices=[InvoiceRead.model_validate(row) for row in invoices],
+                purchase_orders=[PurchaseOrderRead.model_validate(row) for row in orders],
+                audit_events=[AuditRead.model_validate(row) for row in history],
             )
 
     async def graphql_context(actor: Actor) -> Context:

@@ -245,6 +245,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/processing-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Processing Jobs
+         * @description Tenant-scoped digital invoice jobs with stable cursor pagination and durable backlog counts.
+         */
+        get: operations["listProcessingJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{job_id}/replay": {
         parameters: {
             query?: never;
@@ -500,7 +520,7 @@ export interface components {
             updated_at: string;
             /**
              * Next Action
-             * @default Poll this resource. Pending dispatch awaits the processing worker milestone.
+             * @default Poll this resource for current processing state and next action.
              */
             next_action: string;
         };
@@ -510,6 +530,62 @@ export interface components {
             has_next_page: boolean;
             /** End Cursor */
             end_cursor: string | null;
+        };
+        /** ProcessingJobPage */
+        ProcessingJobPage: {
+            /** Items */
+            items: components["schemas"]["ProcessingJobRead"][];
+            page_info: components["schemas"]["PageInfo"];
+            /** Active Count */
+            active_count: number;
+            /** Admission Limit */
+            admission_limit: number;
+        };
+        /** ProcessingJobRead */
+        ProcessingJobRead: {
+            /** Id */
+            id: string;
+            /** Invoice Id */
+            invoice_id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "extraction" | "reconciliation" | "supplier_webhook";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending_dispatch" | "queued" | "running" | "succeeded" | "failed" | "cancelled";
+            /** Version */
+            version: number;
+            /** Attempts */
+            attempts: number;
+            /** Error Code */
+            error_code: string | null;
+            /** Retryable */
+            retryable: boolean;
+            /** Replay Of */
+            replay_of: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Next Action
+             * @default Poll this resource for current processing state and next action.
+             */
+            next_action: string;
+            /** Stage */
+            stage: string;
+            /** Next Attempt At */
+            next_attempt_at: string | null;
         };
         /** PurchaseOrderCreate */
         PurchaseOrderCreate: {
@@ -2220,6 +2296,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobRead"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    listProcessingJobs: {
+        parameters: {
+            query?: {
+                first?: number;
+                after?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingJobPage"];
                 };
             };
             /** @description Bearer credential missing, invalid or revoked */

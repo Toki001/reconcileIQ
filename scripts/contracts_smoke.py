@@ -84,7 +84,7 @@ def main() -> None:
     assert code == 201, (code, order)
     assert call("/v1/purchase-orders", "POST", po, key="po") == (code, order)
     assert call("/v1/purchase-orders", "POST", po, role="auditor", key="denied")[0] == 403
-    pdf = b"%PDF-1.4\n% Synthetic upload integration probe\n%%EOF\n"
+    pdf = Path("tests/fixtures/financial/invoice-0001.pdf").read_bytes()
     metadata = {
         "filename": "synthetic-probe.pdf",
         "content_type": "application/pdf",
@@ -109,7 +109,13 @@ def main() -> None:
         accepted,
     )
     code, job = call(accepted["status_url"], role="auditor")
-    assert code == 200 and job["state"] == "pending_dispatch"
+    assert code == 200 and job["state"] in {"pending_dispatch", "queued", "running", "succeeded"}
+    deadline = time.monotonic() + 30
+    while job["state"] != "succeeded" and time.monotonic() < deadline:
+        time.sleep(0.25)
+        code, job = call(accepted["status_url"], role="auditor")
+        assert code == 200 and job["state"] != "failed", job.get("error_code")
+    assert job["state"] == "succeeded"
     supplier = settings.supplier_webhooks["local-supplier"]
     notice = {
         "event_id": prefix,
@@ -133,7 +139,7 @@ def main() -> None:
     assert call("/v1/webhooks/suppliers", "POST", notice, extra=webhook_headers) == (code, admitted)
     print(
         "Contract smoke passed: served schemas, roles, PO replay, real presigned PUT/seal, "
-        "durable 202/jobs, signed webhook replay."
+        "durable 202/jobs, completed untrusted digital-text extraction, signed webhook replay."
     )
 
 

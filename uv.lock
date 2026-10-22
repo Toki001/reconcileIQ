@@ -886,6 +886,8 @@ version = "0.1.0"
 source = { editable = "services/worker" }
 dependencies = [
     { name = "celery" },
+    { name = "minio" },
+    { name = "pypdf" },
     { name = "reconcileiq-ai" },
     { name = "reconcileiq-database" },
 ]
@@ -893,6 +895,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "celery", specifier = ">=5.6,<6" },
+    { name = "minio", specifier = ">=7.2,<8" },
+    { name = "pypdf", specifier = ">=6.21.2,<7" },
     { name = "reconcileiq-ai", editable = "packages/ai" },
     { name = "reconcileiq-database", editable = "packages/database" },
 ]

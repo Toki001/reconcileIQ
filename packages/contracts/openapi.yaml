@@ -1480,6 +1480,112 @@ paths:
       - admin
       - reviewer
       - auditor
+  /v1/processing-jobs:
+    get:
+      tags:
+      - jobs
+      summary: Processing Jobs
+      description: Tenant-scoped digital invoice jobs with stable cursor pagination
+        and durable backlog counts.
+      operationId: listProcessingJobs
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: first
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: First
+      - name: after
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: After
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingJobPage'
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
+      - auditor
   /v1/jobs/{job_id}/replay:
     post:
       tags:
@@ -2167,8 +2273,7 @@ components:
         next_action:
           type: string
           title: Next Action
-          default: Poll this resource. Pending dispatch awaits the processing worker
-            milestone.
+          default: Poll this resource for current processing state and next action.
       type: object
       required:
       - id
@@ -2198,6 +2303,111 @@ components:
       - has_next_page
       - end_cursor
       title: PageInfo
+    ProcessingJobPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ProcessingJobRead'
+          type: array
+          title: Items
+        page_info:
+          $ref: '#/components/schemas/PageInfo'
+        active_count:
+          type: integer
+          title: Active Count
+        admission_limit:
+          type: integer
+          title: Admission Limit
+      type: object
+      required:
+      - items
+      - page_info
+      - active_count
+      - admission_limit
+      title: ProcessingJobPage
+    ProcessingJobRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        invoice_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Invoice Id
+        kind:
+          type: string
+          enum:
+          - extraction
+          - reconciliation
+          - supplier_webhook
+          title: Kind
+        state:
+          type: string
+          enum:
+          - pending_dispatch
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+          title: State
+        version:
+          type: integer
+          title: Version
+        attempts:
+          type: integer
+          title: Attempts
+        error_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Code
+        retryable:
+          type: boolean
+          title: Retryable
+        replay_of:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Replay Of
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        next_action:
+          type: string
+          title: Next Action
+          default: Poll this resource for current processing state and next action.
+        stage:
+          type: string
+          title: Stage
+        next_attempt_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Next Attempt At
+      type: object
+      required:
+      - id
+      - invoice_id
+      - kind
+      - state
+      - version
+      - attempts
+      - error_code
+      - retryable
+      - replay_of
+      - created_at
+      - updated_at
+      - stage
+      - next_attempt_at
+      title: ProcessingJobRead
     PurchaseOrderCreate:
       properties:
         vendor:

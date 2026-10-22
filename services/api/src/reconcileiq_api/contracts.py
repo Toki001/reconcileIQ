@@ -177,9 +177,7 @@ class JobRead(Output):
     replay_of: str | None
     created_at: datetime
     updated_at: datetime
-    next_action: str = (
-        "Poll this resource. Pending dispatch awaits the processing worker milestone."
-    )
+    next_action: str = "Poll this resource for current processing state and next action."
 
 
 class JobAccepted(Output):
@@ -222,6 +220,18 @@ class PageInfo(Output):
 class InvoicePage(Output):
     items: list[InvoiceDetail]
     page_info: PageInfo
+
+
+class ProcessingJobRead(JobRead):
+    stage: str
+    next_attempt_at: datetime | None
+
+
+class ProcessingJobPage(Output):
+    items: list[ProcessingJobRead]
+    page_info: PageInfo
+    active_count: int
+    admission_limit: int
 
 
 class PurchaseOrderPage(Output):

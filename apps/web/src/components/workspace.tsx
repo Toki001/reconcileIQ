@@ -88,7 +88,7 @@ export function Workspace({ children }: { children: ReactNode }) {
           {children}
         </main>
         <footer className="page-footer">
-          <span>ReconcileIQ · Milestone 01</span>
+          <span>ReconcileIQ · Milestone 04</span>
           <span>Synthetic records. No payments are executed.</span>
         </footer>
       </div>
