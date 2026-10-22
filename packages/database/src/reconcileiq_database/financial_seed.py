@@ -123,6 +123,7 @@ def seed_financial(engine: Engine) -> dict[str, int]:
             vendor = data["vendors"][spec["vendor_index"]]
             po = PurchaseOrder(
                 id=identity(spec["reference"]),
+                reference=spec["reference"],
                 organization_id=ORG,
                 vendor_id=vendor_ids[spec["vendor_index"]],
                 vendor=vendor["name"],

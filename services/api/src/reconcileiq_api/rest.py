@@ -5,16 +5,26 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Header, Query
 from fastapi.responses import JSONResponse
+from reconcileiq_ai.invoice import InvoiceCandidate
 from reconcileiq_database.config import Settings
 from reconcileiq_database.financial import normalize_po, normalize_receipt
+from reconcileiq_database.invoice_workflow import (
+    context_digest,
+    evaluate_candidate,
+    latest_candidate,
+    matching_context,
+    publish_review,
+)
 from reconcileiq_database.models import (
     GoodsReceipt,
     Invoice,
     Job,
     OutboxEvent,
     PurchaseOrder,
+    ReconciliationEvidence,
     ReconciliationRun,
     ReviewDecision,
+    StructuredRequest,
     utcnow,
 )
 from sqlalchemy import Engine, func, select
@@ -477,6 +487,7 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
                 {"invoice_id": row.id, "reconciliation_id": run_id, "policy_id": body.policy_id},
                 row.id,
             )
+            source = latest_candidate(session, row)
             session.add(
                 ReconciliationRun(
                     id=run_id,
@@ -484,6 +495,7 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
                     invoice_id=row.id,
                     job_id=job.id,
                     policy_id=body.policy_id,
+                    extraction_version_id=source.id if source else None,
                 )
             )
             row.version += 1
@@ -539,6 +551,43 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
                     "STATE_CONFLICT",
                     "A completed current result in a reviewable state is required.",
                 )
+            evidence = session.get(ReconciliationEvidence, run.id)
+            source = latest_candidate(session, row)
+            if evidence is not None or source is not None:
+                if (
+                    evidence is None
+                    or source is None
+                    or evidence.extraction_version_id != source.id
+                    or evidence.invoice_version != row.version
+                ):
+                    raise ApiError(
+                        409,
+                        "STALE_RECONCILIATION",
+                        "Reconcile the current candidate before review.",
+                    )
+                candidate = InvoiceCandidate.model_validate(source.payload["candidate"])
+                context = matching_context(session, row, candidate)
+                if context_digest(context) != evidence.context_sha256:
+                    raise ApiError(
+                        409,
+                        "STALE_RECONCILIATION",
+                        "Purchase order or receipts changed; reconcile again.",
+                    )
+                if body.decision == "accept":
+                    if evaluate_candidate(candidate, context, run.policy_id).outcome != "matched":
+                        raise ApiError(
+                            409,
+                            "REVIEW_REQUIRES_MATCH",
+                            "Correct discrepancies and reconcile before acceptance.",
+                        )
+                    try:
+                        publish_review(session, row, source, actor.actor, uuid4().hex)
+                    except ValueError:
+                        raise ApiError(
+                            409,
+                            "PUBLICATION_CONFLICT",
+                            "Published supplier, currency or order binding cannot change.",
+                        ) from None
             before = {"status": row.status, "version": row.version}
             row.status = "reviewed_accepted" if body.decision == "accept" else "reviewed_rejected"
             decision = ReviewDecision(
@@ -659,6 +708,51 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
                 original.invoice_id,
                 original.id,
             )
+            request = session.get(StructuredRequest, original.id)
+            if request is not None:
+                invoice = owned(session, Invoice, request.invoice_id, actor, lock=True)
+                invoice.version += 1
+                session.add(
+                    StructuredRequest(
+                        job_id=new.id,
+                        organization_id=actor.organization_id,
+                        invoice_id=invoice.id,
+                        text_version_id=request.text_version_id,
+                        invoice_version=invoice.version,
+                        request_id=request.request_id,
+                        model=request.model,
+                        prompt_version=request.prompt_version,
+                        synthetic_authorized=request.synthetic_authorized,
+                        requested_by=actor.actor,
+                    )
+                )
+            run = session.scalar(
+                select(ReconciliationRun).where(
+                    ReconciliationRun.organization_id == actor.organization_id,
+                    ReconciliationRun.job_id == original.id,
+                )
+            )
+            if original.kind == "reconciliation" and run and run.extraction_version_id:
+                invoice = owned(session, Invoice, run.invoice_id, actor, lock=True)
+                source = latest_candidate(session, invoice)
+                if source is None or source.id != run.extraction_version_id:
+                    raise ApiError(
+                        409,
+                        "EXTRACTION_SUPERSEDED",
+                        "Start a new reconciliation for current evidence.",
+                    )
+                run_id = uuid4().hex
+                session.add(
+                    ReconciliationRun(
+                        id=run_id,
+                        organization_id=actor.organization_id,
+                        invoice_id=invoice.id,
+                        job_id=new.id,
+                        policy_id=run.policy_id,
+                        extraction_version_id=source.id,
+                    )
+                )
+                invoice.version += 1
             original.version += 1
             audit(
                 session,

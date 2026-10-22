@@ -63,9 +63,11 @@ def evaluate(golden_path: Path, predictions_path: Path) -> dict[str, int | str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--golden", type=Path, default=Path("packages/ai/evals/golden.jsonl"))
     parser.add_argument(
-        "--predictions", type=Path, default=Path("packages/ai/evals/mock-predictions.jsonl")
+        "--golden", type=Path, default=Path("packages/ai/evals/legacy/golden.jsonl")
+    )
+    parser.add_argument(
+        "--predictions", type=Path, default=Path("packages/ai/evals/legacy/mock-predictions.jsonl")
     )
     args = parser.parse_args()
     report = evaluate(args.golden, args.predictions)

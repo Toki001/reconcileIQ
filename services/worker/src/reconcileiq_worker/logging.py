@@ -18,6 +18,7 @@ class SafeDiagnostics(logging.Filter):
             settings.broker_url,
             settings.minio_secret_key,
             settings.minio_access_key,
+            settings.ai_api_key,
             settings.admin_token,
             settings.reviewer_token,
             settings.auditor_token,

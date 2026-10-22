@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     minio_public_endpoint: AnyHttpUrl = AnyHttpUrl("http://127.0.0.1:9100")
     minio_bucket: str = Field(default="invoices", pattern=r"^[a-z0-9][a-z0-9-]{2,62}$")
     worker_enabled: bool = False
+    ai_api_key: SecretStr = SecretStr("")
+    ocr_enabled: bool = False
     worker_concurrency: int = Field(default=4, ge=1, le=16)
     worker_lease_seconds: int = Field(default=120, ge=90, le=600)
     dispatch_interval_seconds: int = Field(default=2, ge=1, le=60)

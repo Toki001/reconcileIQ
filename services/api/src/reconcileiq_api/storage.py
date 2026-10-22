@@ -1,7 +1,7 @@
 import hashlib
 from datetime import timedelta
 from io import BytesIO
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -61,6 +61,36 @@ class MinioStorage:
                 503, "DEPENDENCY_UNAVAILABLE", "Object storage is unavailable."
             ) from None
 
+    def read_document(self, key: str, size: int, digest: str) -> bytes:
+        try:
+            if not 5 <= size <= 10_485_760:
+                raise ValueError("Invalid size")
+            response = self.client().get_object(self.settings.minio_bucket, key)
+            try:
+                data = response.read(size + 1)
+            finally:
+                response.close()
+                response.release_conn()
+            if len(data) != size or hashlib.sha256(data).hexdigest() != digest:
+                raise ValueError("Invalid retained object")
+            return bytes(data)
+        except Exception:
+            raise ApiError(
+                503, "DOCUMENT_UNAVAILABLE", "Retained PDF could not be verified."
+            ) from None
+
+    def put_document(self, key: str, data: bytes) -> None:
+        try:
+            self.client().put_object(
+                self.settings.minio_bucket,
+                key,
+                BytesIO(data),
+                len(data),
+                content_type="application/pdf",
+            )
+        except Exception:
+            raise ApiError(503, "DEPENDENCY_UNAVAILABLE", "Object storage unavailable.") from None
+
     def verify_and_seal(self, key: str, organization_id: str, size: int, digest: str) -> str:
         try:
             client = self.client()
@@ -108,3 +138,9 @@ class MinioStorage:
             raise ApiError(
                 503, "DEPENDENCY_UNAVAILABLE", "Object storage is unavailable."
             ) from None
+
+
+@runtime_checkable
+class DocumentStorage(Protocol):
+    def read_document(self, key: str, size: int, digest: str) -> bytes: ...
+    def put_document(self, key: str, data: bytes) -> None: ...

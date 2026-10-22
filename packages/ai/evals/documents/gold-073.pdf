@@ -1,0 +1,57 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [4 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 636 >>
+stream
+BT
+/F1 9 Tf
+36 800 Td
+17 TL
+(SYNTHETIC GOLDEN FIXTURE - NO PAYMENT) Tj T*
+(invoice_number: GOLD-073) Tj T*
+(vendor_name: Synthetic Golden Supplies) Tj T*
+(vendor_identifier: GOLD-V) Tj T*
+(invoice_date: 2026-10-01) Tj T*
+(due_date: 2026-11-01) Tj T*
+(currency: JPY) Tj T*
+(tax_mode: exclusive) Tj T*
+(subtotal_minor: 200) Tj T*
+(discount_minor: 0) Tj T*
+(tax_minor: 0) Tj T*
+(total_minor: 200) Tj T*
+(reference: ITEM-1) Tj T*
+(description: Synthetic component) Tj T*
+(quantity: 2) Tj T*
+(unit_price_minor: 100) Tj T*
+(gross_minor: 200) Tj T*
+(discount_minor: 0) Tj T*
+(tax_rate: 0) Tj T*
+(tax_minor: 0) Tj T*
+(total_minor: 200) Tj T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+998
+%%EOF

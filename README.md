@@ -2,7 +2,7 @@
 
 An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
 
-**Milestone 05** verifies the existing digital-PDF pipeline with property-based accounting tests, migration rollback checks, real RabbitMQ confirms, isolated Celery timeout/crash recovery and browser processing workflows. Confirmed defects in Decimal bounds, timeout classification and credential redaction are fixed. Captured text stays untrusted; financial fields, matching, OCR and AI extraction are later work. Existing records, financial rules, contracts and UI remain compatible. Payments are prohibited.
+**Milestone 06** adds structured invoice evidence, immutable human corrections, deterministic two/three-way matching and a working reviewer dashboard. Offline parsing, matching and review are verified against real local services. Gemini remains disabled pending project-specific Free Tier verification; live model quality is unmeasured. Existing records, financial rules, contracts and recovery workflows are preserved. Payments are prohibited.
 
 See the [complete API contract guide](packages/contracts/README.md) for roles, money, pagination, webhook signatures, errors and retry semantics.
 
@@ -87,16 +87,38 @@ Python equivalents use `uv run --all-packages <command>`. Do not omit `--all-pac
 ```text
 apps/web/                  Next.js App Router, TypeScript, Tailwind, Jest
 services/api/              FastAPI REST mutations, Strawberry GraphQL reads, auth
-services/worker/           Celery digital-text processing, outbox recovery and idempotent probe
+services/worker/           Celery text/OCR/structured extraction, matching and outbox recovery
 packages/database/         Pydantic settings, SQLAlchemy models, Alembic, synthetic seed
-packages/reconciliation/   Pure deterministic money, tax, discount and tolerance rules
+packages/reconciliation/   Pure deterministic accounting, exact matching and tolerance rules
 packages/contracts/        Reviewed OpenAPI 3.1, GraphQL SDL and operations
 packages/generated/        Generated REST/GraphQL TypeScript and typed clients
-packages/ai/               Untrusted extraction schema, offline eval harness and fixtures
+packages/ai/               Strict candidate evidence, free-only provider, parser restrictions and evaluation
 tests/                     Persistence, audit, API, concurrency, money and eval checks
 scripts/                   Secret-safe setup, bootstrap and contract tools
 infra/docker/              Non-root application and pinned-source MinIO images
 docs/                      Architecture, local operations and verification evidence
 ```
 
-Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries and [architecture](docs/architecture/overview.md) for ownership. Historical evidence is recorded for milestones [01](docs/verification/milestone-01.md), [02](docs/verification/milestone-02.md), [03](docs/verification/milestone-03.md) and [04](docs/verification/milestone-04.md). See [financial persistence](docs/architecture/database.md), [migration operations](docs/operations/database.md), the [processing runbook](docs/operations/processing.md) and [milestone 05 verification](docs/verification/milestone-05.md) for current boundaries and measured results. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.
+Read [AGENTS.md](AGENTS.md) for non-negotiable boundaries and [architecture](docs/architecture/overview.md) for ownership. Historical evidence is recorded for milestones [01](docs/verification/milestone-01.md), [02](docs/verification/milestone-02.md), [03](docs/verification/milestone-03.md) and [04](docs/verification/milestone-04.md). See [financial persistence](docs/architecture/database.md), [migration operations](docs/operations/database.md), the [processing runbook](docs/operations/processing.md) and [milestone 05 verification](docs/verification/milestone-05.md) for earlier evidence; [milestone 06 verification](docs/verification/milestone-06.md) describes current boundaries and results. `CODEX.md` is the preserved long-term blueprint; future capabilities are not claims about the current milestone.
+
+## Milestone 06: evidence, matching and human review
+
+```sh
+python3 scripts/setup_env.py      # extends private 0600 env files without replacing secrets
+make bootstrap                   # additive migration 0007, real local services
+# Open http://127.0.0.1:3100/review; use your private reviewer/admin key to sign in.
+make check
+RECONCILE_TEST_POSTGRES=1 make check
+make reliability-check           # run sequentially with other coverage/fault suites
+PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e
+# Synthetic offline demo using real API/MinIO/RabbitMQ/Celery, no AI requests:
+uv run --all-packages python scripts/invoice_workflow_smoke.py
+# Linux OCR and parser restrictions, no backend/cloud requests:
+docker compose exec -T worker python scripts/parser_smoke.py
+```
+
+Invoice Review supports original PDF access, source evidence, immutable human corrections, PO/receipt comparisons, two/three-way deterministic matching, accept/reject and audit history. Money stays deterministic; AI cannot approve or pay. The existing finance dashboard and processing/recovery interfaces remain available.
+
+Gemini uses the official Python SDK and `gemini-3.5-flash-lite`, **disabled until independent project/key/billing/quota/model verification passes**. No project details were available for live testing. Manual corrections and local matching work offline. No paid fallback exists. Only labelled synthetic document hashes can use the Free Tier. Tesseract/Poppler are verified in the Linux image and OCR is opt-in; macOS host runtime is absent.
+
+See [extraction and correction workflow](docs/ai/extraction.md), [honest evaluation results](docs/ai/evaluation.md), [free-provider operations](docs/operations/ai-provider.md), and [milestone 06 verification](docs/verification/milestone-06.md). The 100 labelled PDF cases and 1,000 price-mismatch regressions validate offline behavior; live extraction accuracy, AI latency and cost remain unmeasured. Stop before Milestone 07 until it is explicitly requested.

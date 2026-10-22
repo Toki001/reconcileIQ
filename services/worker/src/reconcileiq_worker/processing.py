@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from billiard.exceptions import SoftTimeLimitExceeded
+from reconcileiq_ai.provider import InvoiceProvider
 from reconcileiq_database.config import Settings
 from reconcileiq_database.financial import identity
 from reconcileiq_database.models import (
@@ -21,6 +22,7 @@ from reconcileiq_database.models import (
     JobExecution,
     OutboxEvent,
     ReconciliationRun,
+    StructuredRequest,
 )
 from sqlalchemy import Engine, func, select, text
 from sqlalchemy.orm import Session
@@ -139,10 +141,60 @@ def fail(session: Session, job: Job, error: ProcessingError, settings: Settings)
             .with_for_update()
         )
         if invoice is not None:
-            invoice.status = "needs_review"
-            invoice.exception_code = error.code
-            invoice.exception_detail = "Digital text extraction failed. Inspect the processing job."
-            invoice.version += 1
+            from reconcileiq_database.invoice_workflow import latest_candidate
+
+            prior = (
+                latest_candidate(session, invoice)
+                if session.get(StructuredRequest, job.id)
+                else None
+            )
+            if prior is None:
+                invoice.status = "needs_review"
+                invoice.exception_code = error.code
+                invoice.exception_detail = "Extraction failed. Inspect the processing job."
+                invoice.version += 1
+                request = session.get(StructuredRequest, job.id)
+                if request is not None:
+                    from reconcileiq_database.invoice_workflow import context_digest
+                    from reconcileiq_database.models import ReconciliationEvidence
+
+                    result_id = identity("extraction-failed:" + job.id)
+                    context = {"failed_job_id": job.id, "document_sha256": invoice.document_sha256}
+                    session.add(
+                        ReconciliationRun(
+                            id=result_id,
+                            organization_id=job.organization_id,
+                            invoice_id=invoice.id,
+                            job_id=job.id,
+                            status="failed",
+                            policy_id="extraction-v1",
+                            extraction_version_id=request.text_version_id,
+                            outcome="extraction_failed",
+                        )
+                    )
+                    session.flush()
+                    session.add(
+                        ReconciliationEvidence(
+                            reconciliation_id=result_id,
+                            organization_id=job.organization_id,
+                            invoice_id=invoice.id,
+                            extraction_version_id=request.text_version_id,
+                            invoice_version=invoice.version,
+                            context_sha256=context_digest(context),
+                            context=context,
+                            result={
+                                "outcome": "extraction_failed",
+                                "differences": [
+                                    {
+                                        "code": error.code,
+                                        "field": "extraction",
+                                        "expected": "validated candidate evidence",
+                                        "observed": "provider extraction failed",
+                                    }
+                                ],
+                            },
+                        )
+                    )
     if job.kind == "reconciliation":
         for run in session.scalars(
             select(ReconciliationRun).where(ReconciliationRun.job_id == job.id)
@@ -158,6 +210,7 @@ def process_job(
     job_id: str,
     reader: ObjectReader | None = None,
     provider: TextProvider | None = None,
+    invoice_provider: InvoiceProvider | None = None,
 ) -> None:
     if not all(re.fullmatch(r"[A-Za-z0-9_-]{1,32}", value) for value in (org, job_id)):
         return
@@ -193,6 +246,10 @@ def process_job(
         )
         event(session, job, "job_started")
     try:
+        from reconcileiq_worker.workflows import process_special
+
+        if process_special(engine, settings, org, job_id, token, invoice_provider):
+            return
         with Session(engine) as session:
             job = session.get(Job, job_id)
             assert job is not None
@@ -223,6 +280,10 @@ def process_job(
                 return
             job.stage = "extracting_text"
             event(session, job, "extraction_text_started")
+        if provider is None and settings.environment == "local":
+            from reconcileiq_worker.restricted_parser import RestrictedPdfProvider
+
+            provider = RestrictedPdfProvider(ocr_enabled=settings.ocr_enabled)
         content = (provider or DigitalPdfProvider()).extract(data)
         complete(engine, org, job_id, token, digest, content)
     except SoftTimeLimitExceeded:
@@ -325,20 +386,24 @@ def complete(
             invoice.status, invoice.version = "extracted", invoice.version + 1
             invoice.exception_code = invoice.exception_detail = None
             event(session, job, "untrusted_text_evidence_recorded")
-        attempt = session.scalar(
-            select(JobAttempt).where(
-                JobAttempt.job_id == job.id,
-                JobAttempt.organization_id == org,
-                JobAttempt.state == "running",
-            )
+        succeed(session, job)
+
+
+def succeed(session: Session, job: Job) -> None:
+    attempt = session.scalar(
+        select(JobAttempt).where(
+            JobAttempt.job_id == job.id,
+            JobAttempt.organization_id == job.organization_id,
+            JobAttempt.state == "running",
         )
-        assert attempt is not None
-        attempt.state, attempt.finished_at = "succeeded", now()
-        job.state, job.stage, job.error_code, job.retryable = "succeeded", "completed", None, False
-        job.lease_owner = job.lease_expires_at = None
-        job.updated_at, job.version = now(), job.version + 1
-        envelope = session.scalar(select(OutboxEvent).where(OutboxEvent.job_id == job.id))
-        if envelope is not None:
-            envelope.published_at = envelope.published_at or now()
-            envelope.lease_owner = envelope.lease_expires_at = None
-        event(session, job, "job_completed")
+    )
+    assert attempt is not None
+    attempt.state, attempt.finished_at = "succeeded", now()
+    job.state, job.stage, job.error_code, job.retryable = "succeeded", "completed", None, False
+    job.lease_owner = job.lease_expires_at = None
+    job.updated_at, job.version = now(), job.version + 1
+    envelope = session.scalar(select(OutboxEvent).where(OutboxEvent.job_id == job.id))
+    if envelope is not None:
+        envelope.published_at = envelope.published_at or now()
+        envelope.lease_owner = envelope.lease_expires_at = None
+    event(session, job, "job_completed")

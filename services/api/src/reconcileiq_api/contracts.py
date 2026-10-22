@@ -66,6 +66,9 @@ class PurchaseOrderLine(Input):
 
 
 class PurchaseOrderCreate(Input):
+    reference: str | None = Field(
+        default=None, min_length=1, max_length=80, exclude_if=lambda v: v is None
+    )
     vendor: str = Field(min_length=1, max_length=120)
     description: str = Field(min_length=1, max_length=200)
     currency: Currency

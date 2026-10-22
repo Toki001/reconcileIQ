@@ -2,7 +2,14 @@
 name = "reconcileiq-ai"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["pydantic>=2.12,<3"]
+dependencies = [
+    "reconcileiq-reconciliation",
+    "httpx>=0.28,<1",
+    "google-auth>=2.43,<3",
+    "google-genai>=1.50,<4",
+    "pydantic>=2.12,<3",
+    "pydantic-settings>=2.11,<3",
+]
 
 [project.scripts]
 reconcileiq-eval = "reconcileiq_ai.evaluate:main"

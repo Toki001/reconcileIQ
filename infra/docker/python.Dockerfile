@@ -19,11 +19,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.12-slim AS runtime
 ENV PATH="/app/.venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app
 WORKDIR /app
 COPY --from=build --chown=app:app /app /app
 COPY --chown=app:app alembic.ini ./
 COPY --chown=app:app scripts/ scripts/
+COPY --chown=app:app tests/fixtures/financial/manifest.json tests/fixtures/financial/manifest.json
 USER app
 EXPOSE 8000
 CMD ["uvicorn", "reconcileiq_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

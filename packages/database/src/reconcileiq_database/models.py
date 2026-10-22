@@ -77,6 +77,7 @@ class PurchaseOrder(Base):
     subtotal_minor: Mapped[int | None] = mapped_column(BigInteger)
     tax_minor: Mapped[int | None] = mapped_column(BigInteger)
     discount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    reference: Mapped[str | None] = mapped_column(String(80))
 
     financial_lines: Mapped[list["PurchaseOrderLine"]] = relationship(
         "PurchaseOrderLine",
@@ -513,6 +514,60 @@ class ReconciliationLineResult(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class StructuredRequest(Base):
+    __tablename__ = "structured_extraction_requests"
+    job_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    invoice_id: Mapped[str] = mapped_column(String(32))
+    text_version_id: Mapped[str] = mapped_column(String(32))
+    invoice_version: Mapped[int] = mapped_column(Integer)
+    request_id: Mapped[str] = mapped_column(String(32))
+    model: Mapped[str] = mapped_column(String(80))
+    prompt_version: Mapped[str] = mapped_column(String(40))
+    synthetic_authorized: Mapped[bool] = mapped_column(Boolean)
+    requested_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ReconciliationEvidence(Base):
+    __tablename__ = "reconciliation_evidence"
+    reconciliation_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    invoice_id: Mapped[str] = mapped_column(String(32))
+    extraction_version_id: Mapped[str] = mapped_column(String(32))
+    invoice_version: Mapped[int] = mapped_column(Integer)
+    context_sha256: Mapped[str] = mapped_column(String(64))
+    context: Mapped[dict[str, Any]] = mapped_column(JSON)
+    result: Mapped[dict[str, Any]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ProviderBudget(Base):
+    __tablename__ = "provider_budgets"
+    project_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    minute_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    day_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    minute_used: Mapped[int] = mapped_column(Integer, default=0)
+    day_used: Mapped[int] = mapped_column(Integer, default=0)
+    leases: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
+
+
+class ProviderUsage(Base):
+    __tablename__ = "provider_usage"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    job_id: Mapped[str | None] = mapped_column(String(32))
+    operation: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str] = mapped_column(String(80))
+    prompt_version: Mapped[str] = mapped_column(String(40))
+    proof: Mapped[dict[str, Any]] = mapped_column(JSON)
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    free_tier: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 def _unique(table: str, *columns: str) -> None:
     Base.metadata.tables[table].append_constraint(
         UniqueConstraint(*columns, name=f"uq_{table}_{'_'.join(columns)}"[:63])
@@ -878,4 +933,59 @@ Index(
     "ix_extraction_seals_invoice",
     ExtractionVersionSeal.organization_id,
     ExtractionVersionSeal.invoice_id,
+)
+
+Index(
+    "uq_purchase_orders_organization_id_reference",
+    PurchaseOrder.organization_id,
+    PurchaseOrder.reference,
+    unique=True,
+)
+for _workflow_table in ("structured_extraction_requests", "provider_usage"):
+    _fk(
+        _workflow_table,
+        ["organization_id", "job_id"],
+        "jobs",
+        ["organization_id", "id"],
+        "job_tenant",
+    )
+_fk(
+    "structured_extraction_requests",
+    ["organization_id", "invoice_id"],
+    "invoices",
+    ["organization_id", "id"],
+    "invoice_tenant",
+)
+_fk(
+    "structured_extraction_requests",
+    ["organization_id", "text_version_id", "invoice_id"],
+    "extraction_versions",
+    ["organization_id", "id", "invoice_id"],
+    "text_invoice",
+)
+_fk(
+    "reconciliation_evidence",
+    ["organization_id", "reconciliation_id", "invoice_id"],
+    "reconciliation_runs",
+    ["organization_id", "id", "invoice_id"],
+    "run_invoice",
+)
+_fk(
+    "reconciliation_evidence",
+    ["organization_id", "extraction_version_id", "invoice_id"],
+    "extraction_versions",
+    ["organization_id", "id", "invoice_id"],
+    "extraction_invoice",
+)
+_check("provider_budgets", "minute_used >= 0 AND day_used >= 0", "usage")
+_check(
+    "provider_usage",
+    "(input_tokens IS NULL OR input_tokens >= 0) AND (output_tokens IS NULL OR output_tokens >= 0)",
+    "tokens",
+)
+_check(
+    "provider_usage",
+    "(operation='verification' AND job_id IS NULL) OR "
+    "(operation='generation' AND job_id IS NOT NULL)",
+    "operation",
 )

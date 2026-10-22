@@ -1712,6 +1712,922 @@ paths:
                 minimum: 1
       x-role-permissions:
       - admin
+  /v1/me:
+    get:
+      tags:
+      - identity
+      summary: Identity
+      operationId: getIdentity
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityRead'
+        '401':
+          description: Bearer credential missing, invalid or revoked
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '403':
+          description: Role is not permitted to perform this action
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '404':
+          description: Resource does not exist in the authenticated organization
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '409':
+          description: Version, state, uniqueness or idempotency conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '413':
+          description: Request body exceeds the bounded API payload limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '422':
+          description: Schema, currency, accounting or cursor validation failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '429':
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          description: Unexpected failure; use trace_id when reporting the error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '503':
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      security:
+      - BearerAuth: []
+      x-role-permissions:
+      - admin
+      - reviewer
+      - auditor
+  /v1/ai/status:
+    get:
+      tags:
+      - extraction
+      summary: Provider Status
+      operationId: getAIStatus
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderStatus'
+        '401':
+          description: Bearer credential missing, invalid or revoked
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '403':
+          description: Role is not permitted to perform this action
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '404':
+          description: Resource does not exist in the authenticated organization
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '409':
+          description: Version, state, uniqueness or idempotency conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '413':
+          description: Request body exceeds the bounded API payload limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '422':
+          description: Schema, currency, accounting or cursor validation failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '429':
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          description: Unexpected failure; use trace_id when reporting the error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+        '503':
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      security:
+      - BearerAuth: []
+      x-role-permissions:
+      - admin
+      - reviewer
+      - auditor
+  /v1/ai/verify:
+    post:
+      tags:
+      - extraction
+      summary: Verify
+      description: Admin only. Read-only project/key/billing/quota/model checks. No
+        generation.
+      operationId: verifyFreeProvider
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_.:-]+$
+          description: Organization-wide unique retry key; retained at least 24 hours.
+            Same actor/method/path/normalized body replays the committed response;
+            different request returns 409.
+          title: Idempotency-Key
+        description: Organization-wide unique retry key; retained at least 24 hours.
+          Same actor/method/path/normalized body replays the committed response; different
+          request returns 409.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderStatus'
+          headers:
+            Idempotency-Replayed:
+              description: Original committed response replayed
+              schema:
+                type: boolean
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+  /v1/invoices/{invoice_id}/workspace:
+    get:
+      tags:
+      - invoices
+      summary: Workspace
+      operationId: getInvoiceWorkspace
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoice Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceRead'
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
+      - auditor
+  /v1/invoices/{invoice_id}/document:
+    get:
+      tags:
+      - invoices
+      summary: Document
+      operationId: getInvoiceDocument
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoice Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
+      - auditor
+    put:
+      tags:
+      - invoices
+      summary: Put Document
+      description: Authenticated PDF PUT for browser clients. Exact declared hash/size.
+        Repeated identical PUT is safe before completion.
+      operationId: uploadInvoiceDocument
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoice Id
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              contentMediaType: application/octet-stream
+              title: Data
+      responses:
+        '204':
+          description: Successful Response
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
+  /v1/invoices/{invoice_id}/pages/{page}:
+    get:
+      tags:
+      - invoices
+      summary: Preview
+      operationId: getInvoicePagePreview
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoice Id
+      - name: page
+        in: path
+        required: true
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          title: Page
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+          headers:
+            X-Document-Pages:
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 20
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
+      - auditor
+  /v1/invoices/{invoice_id}/structured-extractions:
+    post:
+      tags:
+      - extraction
+      summary: Structured
+      operationId: startStructuredExtraction
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoice Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_.:-]+$
+          description: Organization-wide unique retry key; retained at least 24 hours.
+            Same actor/method/path/normalized body replays the committed response;
+            different request returns 409.
+          title: Idempotency-Key
+        description: Organization-wide unique retry key; retained at least 24 hours.
+          Same actor/method/path/normalized body replays the committed response; different
+          request returns 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StructuredStart'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+          headers:
+            Location:
+              description: Created resource or job URL
+              schema:
+                type: string
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+            Idempotency-Replayed:
+              description: Original committed response replayed
+              schema:
+                type: boolean
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
+  /v1/invoices/{invoice_id}/corrections:
+    post:
+      tags:
+      - invoices
+      summary: Correction
+      operationId: correctInvoiceEvidence
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Invoice Id
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_.:-]+$
+          description: Organization-wide unique retry key; retained at least 24 hours.
+            Same actor/method/path/normalized body replays the committed response;
+            different request returns 409.
+          title: Idempotency-Key
+        description: Organization-wide unique retry key; retained at least 24 hours.
+          Same actor/method/path/normalized body replays the committed response; different
+          request returns 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateRead'
+          headers:
+            Idempotency-Replayed:
+              description: Original committed response replayed
+              schema:
+                type: boolean
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Bearer credential missing, invalid or revoked
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Role is not permitted to perform this action
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Resource does not exist in the authenticated organization
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Version, state, uniqueness or idempotency conflict
+        '413':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Request body exceeds the bounded API payload limit
+        '422':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Schema, currency, accounting or cursor validation failed
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Organization has reached its pending-job admission limit; Retry-After
+            is returned
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Unexpected failure; use trace_id when reporting the error
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ApiProblem'
+          description: Dependency unavailable; retry with the same Idempotency-Key
+          headers:
+            Retry-After:
+              description: Suggested delay in seconds before polling/retrying
+              schema:
+                type: integer
+                minimum: 1
+      x-role-permissions:
+      - admin
+      - reviewer
   /v1/webhooks/suppliers:
     post:
       tags:
@@ -1893,6 +2809,13 @@ components:
           - WEBHOOK_INVALID
           - WEBHOOK_EXPIRED
           - INTERNAL_ERROR
+          - DOCUMENT_UNAVAILABLE
+          - STALE_RECONCILIATION
+          - REVIEW_REQUIRES_MATCH
+          - PUBLICATION_CONFLICT
+          - EXTRACTION_SUPERSEDED
+          - FREE_TIER_UNVERIFIED
+          - AI_SYNTHETIC_INPUT_REQUIRED
           title: Code
         detail:
           type: string
@@ -1949,6 +2872,103 @@ components:
       - detail
       - occurred_at
       title: AuditRead
+    CandidateLine:
+      properties:
+        reference:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____'
+        description:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____'
+        quantity:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern______1-9__0-9__0_8_____0-9__1_6__________'
+        unit_price_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        gross_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        discount_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        tax_rate:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern______1-9__0-9__0_8_____0-9__1_6__________'
+        tax_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        total_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+      additionalProperties: false
+      type: object
+      required:
+      - reference
+      - description
+      - quantity
+      - unit_price_minor
+      - gross_minor
+      - discount_minor
+      - tax_rate
+      - tax_minor
+      - total_minor
+      title: CandidateLine
+    CandidateRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        number:
+          type: integer
+          title: Number
+        origin:
+          type: string
+          title: Origin
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        model:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model
+        prompt_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prompt Version
+        candidate:
+          $ref: '#/components/schemas/InvoiceCandidate'
+      type: object
+      required:
+      - id
+      - number
+      - origin
+      - created_at
+      - model
+      - prompt_version
+      - candidate
+      title: CandidateRead
+    CorrectionCreate:
+      properties:
+        expected_version:
+          type: integer
+          maximum: 2147483647.0
+          minimum: 1.0
+          title: Expected Version
+        source_version_id:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Source Version Id
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 10
+          title: Reason
+        candidate:
+          $ref: '#/components/schemas/InvoiceCandidate'
+      additionalProperties: false
+      type: object
+      required:
+      - expected_version
+      - reason
+      - candidate
+      title: CorrectionCreate
     DashboardSnapshot:
       properties:
         synthetic:
@@ -1985,6 +3005,348 @@ components:
       - purchase_orders
       - audit_events
       title: DashboardSnapshot
+    DifferenceRead:
+      properties:
+        code:
+          type: string
+          title: Code
+        field:
+          type: string
+          title: Field
+        expected:
+          type: string
+          title: Expected
+        observed:
+          type: string
+          title: Observed
+      type: object
+      required:
+      - code
+      - field
+      - expected
+      - observed
+      title: DifferenceRead
+    Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____:
+      properties:
+        value:
+          anyOf:
+          - type: integer
+            maximum: 9007199254740991.0
+            minimum: 0.0
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Annotated[int, FieldInfo(annotation=NoneType, required=True,
+        metadata=[Ge(ge=0), Le(le=9007199254740991)])]]
+    ? Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_120_____
+    : properties:
+        value:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True,
+        metadata=[MinLen(min_length=1), MaxLen(max_length=120)])]]
+    ? Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____
+    : properties:
+        value:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True,
+        metadata=[MinLen(min_length=1), MaxLen(max_length=200)])]]
+    ? Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_80_____
+    : properties:
+        value:
+          anyOf:
+          - type: string
+            maxLength: 80
+            minLength: 1
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True,
+        metadata=[MinLen(min_length=1), MaxLen(max_length=80)])]]
+    ? Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern______1-9__0-9__0_8_____0-9__1_6__________
+    : properties:
+        value:
+          anyOf:
+          - type: string
+            pattern: ^(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,6})?$
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True,
+        metadata=[_PydanticGeneralMetadata(pattern='^(?:0|[1-9][0-9]{0,8})(?:\\.[0-9]{1,6})?$')])]]
+    ? Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern_____d_4_-__d_2_-__d_2________
+    : properties:
+        value:
+          anyOf:
+          - type: string
+            pattern: ^\d{4}-\d{2}-\d{2}$
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True,
+        metadata=[_PydanticGeneralMetadata(pattern='^\\d{4}-\\d{2}-\\d{2}$')])]]
+    Evidence_Literal__USD____EUR____PHP____JPY____KWD___:
+      properties:
+        value:
+          anyOf:
+          - type: string
+            enum:
+            - USD
+            - EUR
+            - PHP
+            - JPY
+            - KWD
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Literal['USD', 'EUR', 'PHP', 'JPY', 'KWD']]
+    Evidence_Literal__exclusive____inclusive___:
+      properties:
+        value:
+          anyOf:
+          - type: string
+            enum:
+            - exclusive
+            - inclusive
+          - type: 'null'
+          title: Value
+        status:
+          type: string
+          enum:
+          - observed
+          - missing
+          - inferred
+          - human
+          title: Status
+        pages:
+          items:
+            type: integer
+            maximum: 20.0
+            minimum: 1.0
+          type: array
+          maxItems: 20
+          title: Pages
+        quote:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Quote
+      additionalProperties: false
+      type: object
+      required:
+      - value
+      - status
+      - pages
+      - quote
+      title: Evidence[Literal['exclusive', 'inclusive']]
     FieldError:
       properties:
         path:
@@ -2028,6 +3390,71 @@ components:
       required:
       - status
       title: Health
+    IdentityRead:
+      properties:
+        organization_id:
+          type: string
+          title: Organization Id
+        actor:
+          type: string
+          title: Actor
+        role:
+          $ref: '#/components/schemas/Role'
+      type: object
+      required:
+      - organization_id
+      - actor
+      - role
+      title: IdentityRead
+    InvoiceCandidate:
+      properties:
+        invoice_number:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_80_____'
+        vendor_name:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_120_____'
+        vendor_identifier:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____'
+        invoice_date:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern_____d_4_-__d_2_-__d_2________'
+        due_date:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern_____d_4_-__d_2_-__d_2________'
+        purchase_order_reference:
+          $ref: '#/components/schemas/Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____'
+        currency:
+          $ref: '#/components/schemas/Evidence_Literal__USD____EUR____PHP____JPY____KWD___'
+        tax_mode:
+          $ref: '#/components/schemas/Evidence_Literal__exclusive____inclusive___'
+        subtotal_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        discount_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        tax_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        total_minor:
+          $ref: '#/components/schemas/Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____'
+        lines:
+          items:
+            $ref: '#/components/schemas/CandidateLine'
+          type: array
+          maxItems: 100
+          title: Lines
+      additionalProperties: false
+      type: object
+      required:
+      - invoice_number
+      - vendor_name
+      - vendor_identifier
+      - invoice_date
+      - due_date
+      - purchase_order_reference
+      - currency
+      - tax_mode
+      - subtotal_minor
+      - discount_minor
+      - tax_minor
+      - total_minor
+      - lines
+      title: InvoiceCandidate
     InvoiceDetail:
       properties:
         id:
@@ -2408,8 +3835,43 @@ components:
       - stage
       - next_attempt_at
       title: ProcessingJobRead
+    ProviderStatus:
+      properties:
+        available:
+          type: boolean
+          title: Available
+        model:
+          type: string
+          title: Model
+        code:
+          type: string
+          title: Code
+        checked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Checked At
+        synthetic_only:
+          type: boolean
+          const: true
+          title: Synthetic Only
+          default: true
+      type: object
+      required:
+      - available
+      - model
+      - code
+      title: ProviderStatus
     PurchaseOrderCreate:
       properties:
+        reference:
+          anyOf:
+          - type: string
+            maxLength: 80
+            minLength: 1
+          - type: 'null'
+          title: Reference
         vendor:
           type: string
           maxLength: 120
@@ -2819,6 +4281,49 @@ components:
       - expected_version
       - reason
       title: ReplayRequest
+    ResultRead:
+      properties:
+        reconciliation_id:
+          type: string
+          title: Reconciliation Id
+        extraction_version_id:
+          type: string
+          title: Extraction Version Id
+        invoice_version:
+          type: integer
+          title: Invoice Version
+        policy_id:
+          type: string
+          title: Policy Id
+        outcome:
+          type: string
+          enum:
+          - matched
+          - unmatched
+          - discrepancy
+          - duplicate
+          - needs_review
+          - extraction_failed
+          title: Outcome
+        differences:
+          items:
+            $ref: '#/components/schemas/DifferenceRead'
+          type: array
+          title: Differences
+        context:
+          additionalProperties: true
+          type: object
+          title: Context
+      type: object
+      required:
+      - reconciliation_id
+      - extraction_version_id
+      - invoice_version
+      - policy_id
+      - outcome
+      - differences
+      - context
+      title: ResultRead
     ReviewCreate:
       properties:
         reconciliation_id:
@@ -2892,6 +4397,56 @@ components:
       - actor
       - created_at
       title: ReviewRead
+    Role:
+      type: string
+      enum:
+      - admin
+      - reviewer
+      - auditor
+      title: Role
+    StructuredStart:
+      properties:
+        expected_version:
+          type: integer
+          maximum: 2147483647.0
+          minimum: 1.0
+          title: Expected Version
+        synthetic_authorized:
+          type: boolean
+          const: true
+          title: Synthetic Authorized
+      additionalProperties: false
+      type: object
+      required:
+      - expected_version
+      - synthetic_authorized
+      title: StructuredStart
+    TimelineRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        actor:
+          type: string
+          title: Actor
+        action:
+          type: string
+          title: Action
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        detail:
+          type: string
+          title: Detail
+      type: object
+      required:
+      - id
+      - actor
+      - action
+      - occurred_at
+      - detail
+      title: TimelineRead
     UploadComplete:
       properties:
         expected_version:
@@ -2974,6 +4529,46 @@ components:
       - size_bytes
       - sha256
       title: UploadRequest
+    WorkspaceRead:
+      properties:
+        invoice:
+          $ref: '#/components/schemas/InvoiceDetail'
+        document_available:
+          type: boolean
+          title: Document Available
+        candidates:
+          items:
+            $ref: '#/components/schemas/CandidateRead'
+          type: array
+          title: Candidates
+        result:
+          anyOf:
+          - $ref: '#/components/schemas/ResultRead'
+          - type: 'null'
+        current_context:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Current Context
+        timeline:
+          items:
+            $ref: '#/components/schemas/TimelineRead'
+          type: array
+          title: Timeline
+        history_truncated:
+          type: boolean
+          title: History Truncated
+      type: object
+      required:
+      - invoice
+      - document_available
+      - candidates
+      - result
+      - current_context
+      - timeline
+      - history_truncated
+      title: WorkspaceRead
   securitySchemes:
     BearerAuth:
       type: http

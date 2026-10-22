@@ -54,6 +54,9 @@ def main() -> None:
                 for role in ("ADMIN", "REVIEWER", "AUDITOR")
             },
             "RECONCILE_CURSOR_SECRET": secrets.token_hex(32),
+            "RECONCILE_WEB_SESSION_SECRET": secrets.token_hex(32),
+            "RECONCILE_AI_ENABLED": "false",
+            "RECONCILE_OCR_ENABLED": "false",
             "RECONCILE_SUPPLIER_WEBHOOKS": json.dumps(
                 {"local-supplier": {"organization_id": "demo", "secret": secrets.token_hex(32)}},
                 separators=(",", ":"),
@@ -74,6 +77,7 @@ def main() -> None:
         {
             "API_BASE_URL": values["API_BASE_URL"],
             "RECONCILE_WEB_API_TOKEN": values["RECONCILE_AUDITOR_TOKEN"],
+            "RECONCILE_WEB_SESSION_SECRET": values["RECONCILE_WEB_SESSION_SECRET"],
         },
     )
     Path(".data").mkdir(exist_ok=True)

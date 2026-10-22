@@ -11,6 +11,7 @@ export const navigation: { href: string; label: string; icon: IconName }[] = [
   { href: "/purchase-orders", label: "Purchase Orders", icon: "orders" },
   { href: "/reconciliation", label: "Reconciliation", icon: "reconciliation" },
   { href: "/exceptions", label: "Exceptions", icon: "exceptions" },
+  { href: "/review", label: "Invoice Review", icon: "reconciliation" },
   { href: "/audit-log", label: "Audit Log", icon: "audit" },
 ];
 
@@ -88,7 +89,7 @@ export function Workspace({ children }: { children: ReactNode }) {
           {children}
         </main>
         <footer className="page-footer">
-          <span>ReconcileIQ · Milestone 04</span>
+          <span>ReconcileIQ · Milestone 06</span>
           <span>Synthetic records. No payments are executed.</span>
         </footer>
       </div>

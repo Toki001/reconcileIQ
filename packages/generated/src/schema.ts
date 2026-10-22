@@ -282,6 +282,149 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Identity */
+        get: operations["getIdentity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Provider Status */
+        get: operations["getAIStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify
+         * @description Admin only. Read-only project/key/billing/quota/model checks. No generation.
+         */
+        post: operations["verifyFreeProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoice_id}/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Workspace */
+        get: operations["getInvoiceWorkspace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoice_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document */
+        get: operations["getInvoiceDocument"];
+        /**
+         * Put Document
+         * @description Authenticated PDF PUT for browser clients. Exact declared hash/size. Repeated identical PUT is safe before completion.
+         */
+        put: operations["uploadInvoiceDocument"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoice_id}/pages/{page}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview */
+        get: operations["getInvoicePagePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoice_id}/structured-extractions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Structured */
+        post: operations["startStructuredExtraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{invoice_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correction */
+        post: operations["correctInvoiceEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks/suppliers": {
         parameters: {
             query?: never;
@@ -318,7 +461,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "VERSION_CONFLICT" | "STATE_CONFLICT" | "IDEMPOTENCY_CONFLICT" | "INVALID_CURSOR" | "UPLOAD_INVALID" | "DEPENDENCY_UNAVAILABLE" | "DATABASE_UNAVAILABLE" | "ADMISSION_LIMIT" | "WEBHOOK_INVALID" | "WEBHOOK_EXPIRED" | "INTERNAL_ERROR";
+            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "VERSION_CONFLICT" | "STATE_CONFLICT" | "IDEMPOTENCY_CONFLICT" | "INVALID_CURSOR" | "UPLOAD_INVALID" | "DEPENDENCY_UNAVAILABLE" | "DATABASE_UNAVAILABLE" | "ADMISSION_LIMIT" | "WEBHOOK_INVALID" | "WEBHOOK_EXPIRED" | "INTERNAL_ERROR" | "DOCUMENT_UNAVAILABLE" | "STALE_RECONCILIATION" | "REVIEW_REQUIRES_MATCH" | "PUBLICATION_CONFLICT" | "EXTRACTION_SUPERSEDED" | "FREE_TIER_UNVERIFIED" | "AI_SYNTHETIC_INPUT_REQUIRED";
             /** Detail */
             detail: string;
             /** Instance */
@@ -349,6 +492,47 @@ export interface components {
              */
             occurred_at: string;
         };
+        /** CandidateLine */
+        CandidateLine: {
+            reference: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"];
+            description: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"];
+            quantity: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern______1-9__0-9__0_8_____0-9__1_6__________"];
+            unit_price_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            gross_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            discount_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            tax_rate: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern______1-9__0-9__0_8_____0-9__1_6__________"];
+            tax_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            total_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+        };
+        /** CandidateRead */
+        CandidateRead: {
+            /** Id */
+            id: string;
+            /** Number */
+            number: number;
+            /** Origin */
+            origin: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Model */
+            model: string | null;
+            /** Prompt Version */
+            prompt_version: string | null;
+            candidate: components["schemas"]["InvoiceCandidate"];
+        };
+        /** CorrectionCreate */
+        CorrectionCreate: {
+            /** Expected Version */
+            expected_version: number;
+            /** Source Version Id */
+            source_version_id?: string | null;
+            /** Reason */
+            reason: string;
+            candidate: components["schemas"]["InvoiceCandidate"];
+        };
         /** DashboardSnapshot */
         DashboardSnapshot: {
             /**
@@ -368,6 +552,129 @@ export interface components {
             purchase_orders: components["schemas"]["PurchaseOrderRead"][];
             /** Audit Events */
             audit_events: components["schemas"]["AuditRead"][];
+        };
+        /** DifferenceRead */
+        DifferenceRead: {
+            /** Code */
+            code: string;
+            /** Field */
+            field: string;
+            /** Expected */
+            expected: string;
+            /** Observed */
+            observed: string;
+        };
+        /** Evidence[Annotated[int, FieldInfo(annotation=NoneType, required=True, metadata=[Ge(ge=0), Le(le=9007199254740991)])]] */
+        Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____: {
+            /** Value */
+            value: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=1), MaxLen(max_length=120)])]] */
+        Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_120_____: {
+            /** Value */
+            value: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=1), MaxLen(max_length=200)])]] */
+        Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____: {
+            /** Value */
+            value: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=1), MaxLen(max_length=80)])]] */
+        Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_80_____: {
+            /** Value */
+            value: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[_PydanticGeneralMetadata(pattern='^(?:0|[1-9][0-9]{0,8})(?:\\.[0-9]{1,6})?$')])]] */
+        "Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern______1-9__0-9__0_8_____0-9__1_6__________": {
+            /** Value */
+            value: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[_PydanticGeneralMetadata(pattern='^\\d{4}-\\d{2}-\\d{2}$')])]] */
+        "Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern_____d_4_-__d_2_-__d_2________": {
+            /** Value */
+            value: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Literal['USD', 'EUR', 'PHP', 'JPY', 'KWD']] */
+        Evidence_Literal__USD____EUR____PHP____JPY____KWD___: {
+            /** Value */
+            value: ("USD" | "EUR" | "PHP" | "JPY" | "KWD") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
+        };
+        /** Evidence[Literal['exclusive', 'inclusive']] */
+        Evidence_Literal__exclusive____inclusive___: {
+            /** Value */
+            value: ("exclusive" | "inclusive") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "missing" | "inferred" | "human";
+            /** Pages */
+            pages: number[];
+            /** Quote */
+            quote: string | null;
         };
         /** FieldError */
         FieldError: {
@@ -395,6 +702,31 @@ export interface components {
             dependencies?: {
                 [key: string]: "ok" | "unavailable" | "not_required";
             };
+        };
+        /** IdentityRead */
+        IdentityRead: {
+            /** Organization Id */
+            organization_id: string;
+            /** Actor */
+            actor: string;
+            role: components["schemas"]["Role"];
+        };
+        /** InvoiceCandidate */
+        InvoiceCandidate: {
+            invoice_number: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_80_____"];
+            vendor_name: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_120_____"];
+            vendor_identifier: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"];
+            invoice_date: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern_____d_4_-__d_2_-__d_2________"];
+            due_date: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_pattern_____d_4_-__d_2_-__d_2________"];
+            purchase_order_reference: components["schemas"]["Evidence_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"];
+            currency: components["schemas"]["Evidence_Literal__USD____EUR____PHP____JPY____KWD___"];
+            tax_mode: components["schemas"]["Evidence_Literal__exclusive____inclusive___"];
+            subtotal_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            discount_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            tax_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            total_minor: components["schemas"]["Evidence_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_9007199254740991_____"];
+            /** Lines */
+            lines: components["schemas"]["CandidateLine"][];
         };
         /** InvoiceDetail */
         InvoiceDetail: {
@@ -587,8 +919,27 @@ export interface components {
             /** Next Attempt At */
             next_attempt_at: string | null;
         };
+        /** ProviderStatus */
+        ProviderStatus: {
+            /** Available */
+            available: boolean;
+            /** Model */
+            model: string;
+            /** Code */
+            code: string;
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Synthetic Only
+             * @default true
+             * @constant
+             */
+            synthetic_only: true;
+        };
         /** PurchaseOrderCreate */
         PurchaseOrderCreate: {
+            /** Reference */
+            reference?: string | null;
             /** Vendor */
             vendor: string;
             /** Description */
@@ -778,6 +1129,28 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ResultRead */
+        ResultRead: {
+            /** Reconciliation Id */
+            reconciliation_id: string;
+            /** Extraction Version Id */
+            extraction_version_id: string;
+            /** Invoice Version */
+            invoice_version: number;
+            /** Policy Id */
+            policy_id: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "matched" | "unmatched" | "discrepancy" | "duplicate" | "needs_review" | "extraction_failed";
+            /** Differences */
+            differences: components["schemas"]["DifferenceRead"][];
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            };
+        };
         /** ReviewCreate */
         ReviewCreate: {
             /** Reconciliation Id */
@@ -816,6 +1189,37 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * Role
+         * @enum {string}
+         */
+        Role: "admin" | "reviewer" | "auditor";
+        /** StructuredStart */
+        StructuredStart: {
+            /** Expected Version */
+            expected_version: number;
+            /**
+             * Synthetic Authorized
+             * @constant
+             */
+            synthetic_authorized: true;
+        };
+        /** TimelineRead */
+        TimelineRead: {
+            /** Id */
+            id: string;
+            /** Actor */
+            actor: string;
+            /** Action */
+            action: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Detail */
+            detail: string;
         };
         /** UploadComplete */
         UploadComplete: {
@@ -864,6 +1268,23 @@ export interface components {
             sha256: string;
             /** Purchase Order Id */
             purchase_order_id?: string | null;
+        };
+        /** WorkspaceRead */
+        WorkspaceRead: {
+            invoice: components["schemas"]["InvoiceDetail"];
+            /** Document Available */
+            document_available: boolean;
+            /** Candidates */
+            candidates: components["schemas"]["CandidateRead"][];
+            result: components["schemas"]["ResultRead"] | null;
+            /** Current Context */
+            current_context: {
+                [key: string]: unknown;
+            } | null;
+            /** Timeline */
+            timeline: components["schemas"]["TimelineRead"][];
+            /** History Truncated */
+            history_truncated: boolean;
         };
     };
     responses: never;
@@ -2524,6 +2945,994 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    getIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityRead"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    getAIStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderStatus"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    verifyFreeProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Organization-wide unique retry key; retained at least 24 hours. Same actor/method/path/normalized body replays the committed response; different request returns 409. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Original committed response replayed */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderStatus"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    getInvoiceWorkspace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceRead"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    getInvoiceDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    uploadInvoiceDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/pdf": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    getInvoicePagePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+                page: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    "X-Document-Pages"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    startStructuredExtraction: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Organization-wide unique retry key; retained at least 24 hours. Same actor/method/path/normalized body replays the committed response; different request returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StructuredStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    /** @description Created resource or job URL */
+                    Location?: string;
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    /** @description Original committed response replayed */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Bearer credential missing, invalid or revoked */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Role is not permitted to perform this action */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource does not exist in the authenticated organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Version, state, uniqueness or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Request body exceeds the bounded API payload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Schema, currency, accounting or cursor validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Organization has reached its pending-job admission limit; Retry-After is returned */
+            429: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected failure; use trace_id when reporting the error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Dependency unavailable; retry with the same Idempotency-Key */
+            503: {
+                headers: {
+                    /** @description Suggested delay in seconds before polling/retrying */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    correctInvoiceEvidence: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Organization-wide unique retry key; retained at least 24 hours. Same actor/method/path/normalized body replays the committed response; different request returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    /** @description Original committed response replayed */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateRead"];
                 };
             };
             /** @description Bearer credential missing, invalid or revoked */

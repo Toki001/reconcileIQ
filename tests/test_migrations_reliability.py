@@ -97,7 +97,7 @@ def test_populated_upgrade_repeatability_and_safe_projection_rollback(
                 assert {key: retained[key] for key in row} == row
         assert (
             connection.scalar(text("SELECT version_num FROM alembic_version"))
-            == "0006_processing_stage"
+            == "0007_invoice_workflows"
         )
     command.check(configuration)
     command.downgrade(configuration, "0005_evidence_seals")

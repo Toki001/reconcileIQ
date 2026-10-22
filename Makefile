@@ -26,6 +26,7 @@ check:
 	$(MAKE) contracts-check
 	$(MAKE) fixtures-check
 	$(UV) run --all-packages reconcileiq-eval
+	$(UV) run --all-packages python -m reconcileiq_ai.structured_evaluate
 	pnpm lint
 	pnpm typecheck
 	pnpm test
@@ -68,6 +69,7 @@ fixtures:
 
 fixtures-check:
 	$(UV) run --all-packages python scripts/financial_fixtures.py --check
+	$(UV) run --all-packages python scripts/golden_fixtures.py --check
 
 seed-financial:
 	$(UV) run --all-packages python -m reconcileiq_database.financial_seed

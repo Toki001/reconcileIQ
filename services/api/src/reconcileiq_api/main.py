@@ -37,6 +37,7 @@ from reconcileiq_api.schemas import (
 )
 from reconcileiq_api.storage import MinioStorage, Storage
 from reconcileiq_api.webhooks import build_webhook_router
+from reconcileiq_api.workflow_rest import build_workflow_router
 
 
 def problem(
@@ -105,6 +106,7 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
                 "updatePurchaseOrder",
                 "createGoodsReceipt",
                 "replayJob",
+                "verifyFreeProvider",
             }
             for path in document["paths"].values():
                 for method, operation in path.items():
@@ -153,13 +155,21 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
     async def context_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
         request.state.trace_id = uuid4().hex
         if request.method in {"POST", "PATCH", "PUT"}:
+            binary_upload = (
+                request.method == "PUT"
+                and request.url.path.startswith("/v1/invoices/")
+                and request.url.path.endswith("/document")
+            )
+            limit = 10_485_760 if binary_upload else 131_072
             body = bytearray()
             async for chunk in request.stream():
                 body.extend(chunk)
-                if len(body) > 131_072:
+                if len(body) > limit:
                     return problem(
                         request,
-                        ApiError(413, "VALIDATION_ERROR", "API request body exceeds 128 KiB."),
+                        ApiError(
+                            413, "VALIDATION_ERROR", "API request body exceeds the route limit."
+                        ),
                     )
             request._body = bytes(body)
         response = await call_next(request)
@@ -235,7 +245,7 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
                     text("SELECT version_num FROM alembic_version")
                 ).scalar()
             dependencies["database"] = (
-                "ok" if revision == "0006_processing_stage" else "unavailable"
+                "ok" if revision == "0007_invoice_workflows" else "unavailable"
             )
         except SQLAlchemyError:
             dependencies["database"] = "unavailable"
@@ -360,6 +370,7 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
     graphql.routes = [route for route in graphql.routes if not isinstance(route, WebSocketRoute)]
     app.include_router(graphql, prefix="/graphql")
     app.include_router(build_router(engine, config, storage or MinioStorage(config)))
+    app.include_router(build_workflow_router(engine, config, storage or MinioStorage(config)))
     app.include_router(build_webhook_router(engine, config))
     return app
 

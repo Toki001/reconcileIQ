@@ -20,3 +20,6 @@ export function createApi(
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 }
+
+// Schema types accompany the handwritten client factory; schema.ts is generated.
+export type { components } from "./schema";

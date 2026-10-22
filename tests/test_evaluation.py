@@ -22,8 +22,8 @@ def test_untrusted_totals_must_be_nonnegative_integer_minor_units(value: object)
 
 def test_offline_fixture_harness() -> None:
     report = evaluate(
-        Path("packages/ai/evals/golden.jsonl"),
-        Path("packages/ai/evals/mock-predictions.jsonl"),
+        Path("packages/ai/evals/legacy/golden.jsonl"),
+        Path("packages/ai/evals/legacy/mock-predictions.jsonl"),
     )
     assert report["cases"] == 3
     assert report["exact"] == 2
@@ -32,14 +32,14 @@ def test_offline_fixture_harness() -> None:
 
 
 def test_eval_detects_wrong_total_missing_case_and_extra_case(tmp_path: Path) -> None:
-    original = Path("packages/ai/evals/mock-predictions.jsonl").read_text().splitlines()
+    original = Path("packages/ai/evals/legacy/mock-predictions.jsonl").read_text().splitlines()
     wrong = json.loads(original[0])
     wrong["output"]["total_minor"] = 1
     extra = json.loads(original[1])
     extra["id"] = "unexpected"
     predictions = tmp_path / "wrong.jsonl"
     predictions.write_text("\n".join([json.dumps(wrong), json.dumps(extra), original[2]]))
-    report = evaluate(Path("packages/ai/evals/golden.jsonl"), predictions)
+    report = evaluate(Path("packages/ai/evals/legacy/golden.jsonl"), predictions)
     assert report["failures"] == 3
 
 
