@@ -1,0 +1,108 @@
+name: Verify
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      RECONCILE_AI_ENABLED: "false"
+      RECONCILE_TEST_POSTGRES: "1"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12.13"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.22.3"
+      - name: Install pinned toolchain and locked workspaces
+        run: |
+          python -m pip install uv==0.13.4
+          npm install --global pnpm@12.10.1
+          make install
+          pnpm exec playwright install --with-deps chromium
+      # This GitHub-hosted VM has no retained database, backend credentials or cloud keys.
+      # Reuse Compose and existing private-queue tests; never target a developer host.
+      - name: Pin isolated infrastructure to the reviewed release image references
+        run: |
+          .venv/bin/python - <<'PYCODE'
+          import subprocess
+          from pathlib import Path
+          import yaml
+          config = yaml.safe_load(Path("compose.release.yml").read_text())
+          for service in ("postgres", "rabbitmq"):
+              image = config["services"][service]["image"]
+              subprocess.run(["docker", "pull", image], check=True)
+              subprocess.run(["docker", "tag", image, image.split("@")[0]], check=True)
+          PYCODE
+      - name: Build and bootstrap isolated services
+        run: make bootstrap
+      - name: Lint, types, unit/integration, schemas, clients, fixtures and Jest
+        run: make check
+      - name: Build worker release target
+        run: docker build --target worker -f infra/docker/python.Dockerfile -t reconcileiq-worker:release-local .
+      - name: Private real-service failures and unchanged critical coverage gates
+        env:
+          RECONCILE_TEST_WORKER_IMAGE: reconcileiq-worker:release-local
+        run: make reliability-check
+      - name: Verify Linux parser, English OCR and native network denial
+        run: docker compose exec -T worker python scripts/parser_smoke.py
+      - name: Backup, populated-copy migration and restore verification
+        run: uv run --all-packages python scripts/verify_release_database.py
+      - name: Live API/MinIO smoke and controlled recovery (sequential)
+        run: |
+          uv run --all-packages python scripts/contracts_smoke.py
+          uv run --all-packages python scripts/processing_smoke.py
+      - name: Browser regressions (after infrastructure faults)
+        run: pnpm test:e2e
+      - name: Build distinct release worker and validate deployment policy
+        run: |
+          uv run --all-packages python scripts/check_release_config.py
+      - name: Collect only non-sensitive coverage metadata
+        if: always()
+        run: |
+          mkdir -p reports
+          if test -f .cache/m05-coverage.json; then cp .cache/m05-coverage.json reports/coverage.json; fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: verification-coverage
+          path: reports/coverage.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove ephemeral CI services and volumes
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Redacted secret scan of Git history
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f git /repo --redact --no-banner
+      - name: Dependency vulnerability report (does not change locks)
+        run: |
+          mkdir -p reports
+          docker run --rm -v "$PWD:/repo:ro" -v "$PWD/reports:/reports" aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c fs --scanners vuln --include-dev-deps --format json --output /reports/dependencies.json /repo
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dependency-vulnerabilities
+          path: reports/dependencies.json
+          retention-days: 7

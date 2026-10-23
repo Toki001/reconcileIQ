@@ -2,6 +2,8 @@
 
 Milestone 04 runs digital-PDF text extraction through the existing Celery worker, RabbitMQ, MinIO and PostgreSQL. It does not use OCR, Gemini or another paid provider. Successful text capture produces sealed **untrusted** evidence, not validated financial fields, a match or an approval.
 
+This document retains the digital-text/recovery baseline. Milestone 06 adds structured extraction, human corrections/review, deterministic matching and optional Linux OCR through the same lifecycle; see [current extraction workflow](../ai/extraction.md). Use the [release runbook](deployment.md) and [rollback procedure](rollback.md) for Milestone 07 containers.
+
 ## Start and inspect
 
 ```sh
@@ -15,7 +17,7 @@ uv run --all-packages python scripts/contracts_smoke.py
 PLAYWRIGHT_CHANNEL=chrome pnpm test:e2e
 ```
 
-Bootstrap preserves volumes, migrates to `0006_processing_stage`, seeds idempotently and starts all six existing services. No extra dispatcher service is required: a supervised worker bootstep runs the recovery publisher in the worker parent process. Multiple instances arbitrate claims through PostgreSQL row locks, leases and `SKIP LOCKED`. The worker declares the durable terminal queue at startup, including on an empty installation.
+Bootstrap preserves volumes, migrates to `0007_invoice_workflows`, seeds idempotently and starts all six existing services. No extra dispatcher service is required: a supervised worker bootstep runs the recovery publisher in the worker parent process. Multiple instances arbitrate claims through PostgreSQL row locks, leases and `SKIP LOCKED`. The worker declares the durable terminal queue at startup, including on an empty installation.
 
 `make bootstrap-lite` remains a SQLite/API/frontend smoke. It does not run business workers. `make worker` explicitly enables processing and requires a matching PostgreSQL URL and RabbitMQ broker in your secure host environment. A worker configured with SQLite and a shared RabbitMQ is rejected, preventing it from acknowledging messages belonging to another database. Prefer Compose for the complete local workflow. Do not print connection URLs or source a dotenv file as shell code.
 
@@ -115,4 +117,4 @@ Run shared-service fault scripts and browser processing tests sequentially. `rel
 
 Milestone 03's diagnostic exposure informed the worker's logging filters: configured secrets, credential-bearing connection strings and database/broker passwords are redacted, raw exception chains are removed, and PDF parser warnings are suppressed. Task messages contain IDs, not documents or presigned URLs. Keep environment files and local backups private. This is defense against accidental diagnostics, not a substitute for production identity, broker ACL design, PDF sandboxing, patching or credential lifecycle controls.
 
-Remaining work includes OCR/AI/financial field extraction, full matching, production identity, stronger tenant scheduling fairness, load/soak tests, distributed tracing and a reviewed retention policy for objects and terminal notifications. No production throughput, security certification, OCR quality or AI quality is claimed. Milestone 05 is not started automatically.
+Remaining work includes production identity, stronger tenant scheduling fairness, load/soak tests, distributed tracing and a reviewed retention policy for objects and terminal notifications. Structured financial extraction/matching and optional OCR were implemented in Milestone 06; live Gemini quality remains unverified. No production throughput, security certification, OCR quality or AI quality is claimed. Milestone 08 is not started automatically.

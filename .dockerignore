@@ -12,3 +12,17 @@
 **/.mypy_cache
 **/.ruff_cache
 docs
+**/test-results
+**/playwright-report
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+**/*.dump
+**/*.pem
+**/*.key
+**/credentials*.json
+.github
+.aws
+.agents
+.codex
+reports

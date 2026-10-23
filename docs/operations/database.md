@@ -15,7 +15,7 @@ docker compose run --rm migrate
 docker compose exec -T api python -m alembic current
 ```
 
-Head is `0006_processing_stage`. The preserved `0001_foundation` and `0002_contracts` revisions are unchanged. `0003_financial` adds the normalized financial model, tenant constraints, exact arithmetic checks, immutable evidence and recovery structures. It backfills organization/vendor/membership relationships, existing PO/receipt line details and outbox tenant keys, recording new audit events while preserving original rows. Existing invoice summaries remain legacy until complete validated extraction evidence is available.
+Head is `0007_invoice_workflows`. The preserved `0001_foundation` and `0002_contracts` revisions are unchanged. `0003_financial` adds the normalized financial model, tenant constraints, exact arithmetic checks, immutable evidence and recovery structures. It backfills organization/vendor/membership relationships, existing PO/receipt line details and outbox tenant keys, recording new audit events while preserving original rows. Existing invoice summaries remain legacy until complete validated extraction evidence is available.
 
 Revision `0005_evidence_seals` adds retained publication seals and guards superseded versions against appended lines/fields. Existing validated versions are conservatively sealed. Its downgrade is allowed only before any version has been sealed; otherwise it refuses to discard history.
 
@@ -24,6 +24,8 @@ Revision `0006_processing_stage` adds only the non-financial `jobs.stage` projec
 Both empty installs and populated milestone 02 upgrades are verified. PostgreSQL applies each migration transactionally. SQLite batch reconstruction uses a dedicated maintenance connection with foreign-key enforcement temporarily disabled, an explicit transaction covering DDL/backfill, and a final `foreign_key_check` before commit; application connections retain FK enforcement. An exception rolls back the migration. Do not run application writes concurrently with SQLite migrations.
 
 Take and verify a restorable backup before applying migrations to valuable data. Keep old binaries available during the compatibility window and prefer a forward fix if an application rollback is needed. Do not reset the schema, remove volumes, edit old migration files or delete audit/effect records to retry work. Revision 0003 deliberately refuses downgrade because dropping these tables would destroy financial evidence.
+
+Revision `0007_invoice_workflows` adds immutable structured extraction requests, reconciliation context snapshots, provider usage/budgets and nullable tenant-scoped PO references. Human acceptance still publishes only through the financial validator. Failed reprocessing preserves evidence. Milestone 07 adds no database revision; the release compatibility window remains exactly this head. Follow [release migration/rollback safety](rollback.md) before image replacement.
 
 ## Expand-contract example
 

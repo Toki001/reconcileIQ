@@ -53,6 +53,8 @@ def probe(job_id: str, mode: str) -> None:
         def extract(self, data: bytes) -> DocumentText:
             if mode == "crash":
                 os._exit(91)  # Actual prefork child loss after the lease/stage committed.
+            if mode == "warm":
+                time.sleep(8)  # Test-only inflight work during actual SIGTERM/warm shutdown.
             if mode == "soft":
                 time.sleep(30)
             if mode == "hard":

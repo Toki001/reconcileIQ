@@ -2,7 +2,7 @@
 
 An auditable accounts payable automation foundation: Next.js/TypeScript, FastAPI/Python, Celery, PostgreSQL, RabbitMQ and MinIO.
 
-**Milestone 06** adds structured invoice evidence, immutable human corrections, deterministic two/three-way matching and a working reviewer dashboard. Offline parsing, matching and review are verified against real local services. Gemini remains disabled pending project-specific Free Tier verification; live model quality is unmeasured. Existing records, financial rules, contracts and recovery workflows are preserved. Payments are prohibited.
+**Milestone 07** adds secured CI definitions, separate API/worker/web release images, a private deployment example, backup/rollback runbooks and gated GHCR publishing preparation. The structured invoice/reviewer workflows, deterministic matching, audit history and durable workers remain intact. Public production deployment and GHCR publishing remain blocked by the documented security/account configuration requirements. Gemini is disabled and live quality is unmeasured. Payments are prohibited.
 
 See the [complete API contract guide](packages/contracts/README.md) for roles, money, pagination, webhook signatures, errors and retry semantics.
 
@@ -122,3 +122,15 @@ Invoice Review supports original PDF access, source evidence, immutable human co
 Gemini uses the official Python SDK and `gemini-3.5-flash-lite`, **disabled until independent project/key/billing/quota/model verification passes**. No project details were available for live testing. Manual corrections and local matching work offline. No paid fallback exists. Only labelled synthetic document hashes can use the Free Tier. Tesseract/Poppler are verified in the Linux image and OCR is opt-in; macOS host runtime is absent.
 
 See [extraction and correction workflow](docs/ai/extraction.md), [honest evaluation results](docs/ai/evaluation.md), [free-provider operations](docs/operations/ai-provider.md), and [milestone 06 verification](docs/verification/milestone-06.md). The 100 labelled PDF cases and 1,000 price-mismatch regressions validate offline behavior; live extraction accuracy, AI latency and cost remain unmeasured. Stop before Milestone 07 until it is explicitly requested.
+
+## Release engineering
+
+Milestone 07 adds secured PR verification, distinct non-root API/worker/web image targets, a separate private release Compose example and guarded GHCR publishing preparation. Public production deployment remains blocked by identity, document isolation and privacy requirements. Gemini remains disabled and no images are published automatically.
+
+```sh
+make release-images
+make release-config
+make release-db-check
+```
+
+Read [deployment](docs/operations/deployment.md), [rollback and recovery](docs/operations/rollback.md), [CI/CD and GHCR setup](docs/operations/ci-cd.md), [production readiness](docs/security/production-readiness.md) and [actual Milestone 07 verification](docs/verification/milestone-07.md). Use `compose.release.yml` alone for private rehearsals; its default production mode fails closed. Milestone 08 is not started automatically.

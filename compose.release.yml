@@ -1,0 +1,242 @@
+# Private release rehearsal ONLY. Production identity is unsupported and fails closed.
+# Standalone file; never merge with development Compose. See docs/operations/deployment.md.
+name: reconcileiq-release
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Run make env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make env}
+      POSTGRES_DB: ${POSTGRES_DB:?Run make env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 1024m
+    cpus: "1.0"
+    networks:
+      - backend
+    stop_grace_period: 60s
+  rabbitmq:
+    image: rabbitmq:4-management-alpine@sha256:d5c8b200a061242868833c8bbdd0703534a4a06ffe654a853e33acd46c7ce258
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Run make env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Run make env}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - -q
+        - ping
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: "1.0"
+    networks:
+      - backend
+    stop_grace_period: 60s
+  minio:
+    image: ${RECONCILE_MINIO_IMAGE:-reconcileiq-minio:local}
+    build:
+      context: .
+      dockerfile: infra/docker/minio.Dockerfile
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Run make env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Run make env}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:9000/minio/health/live
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: "1.0"
+    networks:
+      - backend
+    stop_grace_period: 60s
+  migrate:
+    image: ${RECONCILE_API_IMAGE:-reconcileiq-api:release-local}
+    build:
+      context: .
+      dockerfile: infra/docker/python.Dockerfile
+      target: api
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    environment: &id001
+      RECONCILE_OCR_ENABLED: ${RECONCILE_OCR_ENABLED:-false}
+      RECONCILE_ENVIRONMENT: ${RECONCILE_RELEASE_ENVIRONMENT:-production}
+      RECONCILE_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?Run make env}:${POSTGRES_PASSWORD:?Run make env}@postgres:5432/${POSTGRES_DB:?Run make env}
+      RECONCILE_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER:?Run make env}:${RABBITMQ_DEFAULT_PASS:?Run make env}@rabbitmq:5672//
+      RECONCILE_MINIO_ENDPOINT: http://minio:9000
+      RECONCILE_INFRASTRUCTURE_REQUIRED: "true"
+      RECONCILE_WORKER_ENABLED: "true"
+      RECONCILE_WORKER_CONCURRENCY: ${RECONCILE_WORKER_CONCURRENCY:-4}
+      RECONCILE_ADMITTED_JOB_LIMIT: ${RECONCILE_ADMITTED_JOB_LIMIT:-500}
+      RECONCILE_WORKER_LEASE_SECONDS: ${RECONCILE_WORKER_LEASE_SECONDS:-120}
+      RECONCILE_DISPATCH_INTERVAL_SECONDS: ${RECONCILE_DISPATCH_INTERVAL_SECONDS:-2}
+      RECONCILE_DISPATCH_BATCH_SIZE: ${RECONCILE_DISPATCH_BATCH_SIZE:-25}
+      RECONCILE_DISPATCH_VISIBILITY_SECONDS: ${RECONCILE_DISPATCH_VISIBILITY_SECONDS:-180}
+      RECONCILE_RETRY_BASE_SECONDS: ${RECONCILE_RETRY_BASE_SECONDS:-5}
+      RECONCILE_RETRY_MAX_SECONDS: ${RECONCILE_RETRY_MAX_SECONDS:-300}
+      RECONCILE_ADMIN_TOKEN: ${RECONCILE_ADMIN_TOKEN:?Run make env}
+      RECONCILE_REVIEWER_TOKEN: ${RECONCILE_REVIEWER_TOKEN:?Run make env}
+      RECONCILE_AUDITOR_TOKEN: ${RECONCILE_AUDITOR_TOKEN:?Run make env}
+      RECONCILE_CURSOR_SECRET: ${RECONCILE_CURSOR_SECRET:?Run make env}
+      RECONCILE_SUPPLIER_WEBHOOKS: ${RECONCILE_SUPPLIER_WEBHOOKS:?Run make env}
+      RECONCILE_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?Run make env}
+      RECONCILE_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Run make env}
+      RECONCILE_MINIO_PUBLIC_ENDPOINT: http://minio:9000
+      RECONCILE_AI_ENABLED: "false"
+    mem_limit: 1536m
+    cpus: "1.5"
+    restart: "no"
+    stop_grace_period: 90s
+    networks:
+      - backend
+    profiles:
+      - maintenance
+    command:
+      - python
+      - -m
+      - alembic
+      - upgrade
+      - head
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    image: ${RECONCILE_API_IMAGE:-reconcileiq-api:release-local}
+    build:
+      context: .
+      dockerfile: infra/docker/python.Dockerfile
+      target: api
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    environment: *id001
+    mem_limit: 1536m
+    cpus: "1.5"
+    restart: unless-stopped
+    stop_grace_period: 90s
+    networks:
+      - backend
+    command:
+      - sh
+      - -c
+      - python scripts/release_preflight.py && exec uvicorn reconcileiq_api.main:app --host 0.0.0.0 --port 8000 --no-access-log
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+  worker:
+    image: ${RECONCILE_WORKER_IMAGE:-reconcileiq-worker:release-local}
+    build:
+      context: .
+      dockerfile: infra/docker/python.Dockerfile
+      target: worker
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    environment: *id001
+    mem_limit: 1536m
+    cpus: "1.5"
+    restart: unless-stopped
+    stop_grace_period: 90s
+    networks:
+      - backend
+    command:
+      - sh
+      - -c
+      - python scripts/release_preflight.py && exec celery -A reconcileiq_worker.app:celery_app worker --loglevel=WARNING
+    depends_on:
+      api:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    image: ${RECONCILE_WEB_IMAGE:-reconcileiq-web:release-local}
+    init: true
+    environment:
+      API_BASE_URL: http://api:8000
+      RECONCILE_WEB_API_TOKEN: ${RECONCILE_AUDITOR_TOKEN:?Run make env}
+      RECONCILE_WEB_SESSION_SECRET: ${RECONCILE_WEB_SESSION_SECRET:?Run make env}
+    ports:
+      - 127.0.0.1:${RECONCILE_RELEASE_WEB_PORT:-13100}:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: "1.0"
+    stop_grace_period: 30s
+    networks:
+      - edge
+      - backend
+networks:
+  backend:
+    internal: true
+  edge: {}
+volumes:
+  postgres-data: null
+  rabbitmq-data: null
+  minio-data: null

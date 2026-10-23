@@ -73,3 +73,15 @@ fixtures-check:
 
 seed-financial:
 	$(UV) run --all-packages python -m reconcileiq_database.financial_seed
+
+.PHONY: release-images release-config release-db-check
+release-images:
+	docker build --target api -f infra/docker/python.Dockerfile -t reconcileiq-api:release-local .
+	docker build --target worker -f infra/docker/python.Dockerfile -t reconcileiq-worker:release-local .
+	docker build -f infra/docker/web.Dockerfile -t reconcileiq-web:release-local .
+
+release-config:
+	$(UV) run --all-packages python scripts/check_release_config.py
+
+release-db-check:
+	$(UV) run --all-packages python scripts/verify_release_database.py
