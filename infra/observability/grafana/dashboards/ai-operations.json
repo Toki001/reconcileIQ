@@ -1,0 +1,147 @@
+{
+  "uid": "riq-ai-operations",
+  "title": "ReconcileIQ \u2014 AI Operations",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["reconcileiq", "local-synthetic"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Actual local collected metrics. No production or live Gemini quality measurements. Empty panels mean no observations.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Provider status (disabled/synthetic/live)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_provider_status",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request volume by mode",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(provider_mode,outcome)(rate(riq_provider_requests_total[5m]))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Token consumption",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(provider_mode)(increase(riq_provider_input_tokens_total[1h])+increase(riq_provider_output_tokens_total[1h]))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Estimated cost with recorded usage only",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_provider_estimated_cost_USD_total",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Quota errors",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(riq_provider_quota_total[10m])",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Timeouts",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(riq_provider_timeouts_total[10m])",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    }
+  ]
+}

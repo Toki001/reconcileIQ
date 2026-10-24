@@ -1,10 +1,11 @@
+import { apiUrl, envFile } from "./env";
 import { test, expect } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 test.use({ trace: "off" });
 function token(role: string) {
-  const line = readFileSync(".env", "utf8")
+  const line = readFileSync(envFile, "utf8")
     .split("\n")
     .find((row) => row.startsWith(`RECONCILE_${role}_TOKEN=`));
   if (!line) throw new Error("Local credential unavailable");
@@ -35,7 +36,7 @@ test("real reviewer uploads, corrects, reconciles and accepts an invoice", async
     name,
     reference,
   ]);
-  const po = await request.post("http://127.0.0.1:8000/v1/purchase-orders", {
+  const po = await request.post(apiUrl + "/v1/purchase-orders", {
     headers: {
       Authorization: `Bearer ${token("ADMIN")}`,
       "Idempotency-Key": `ui-po-${suffix}`,
@@ -64,21 +65,18 @@ test("real reviewer uploads, corrects, reconciles and accepts an invoice", async
   });
   expect(po.status()).toBe(201);
   const order = await po.json();
-  const receipt = await request.post(
-    "http://127.0.0.1:8000/v1/goods-receipts",
-    {
-      headers: {
-        Authorization: `Bearer ${token("ADMIN")}`,
-        "Idempotency-Key": `ui-receipt-${suffix}`,
-      },
-      data: {
-        purchase_order_id: order.id,
-        reference: `UI-GR-${suffix}`,
-        received_on: "2026-10-02",
-        lines: [{ purchase_order_line_id: "ITEM-1", quantity: "2" }],
-      },
+  const receipt = await request.post(apiUrl + "/v1/goods-receipts", {
+    headers: {
+      Authorization: `Bearer ${token("ADMIN")}`,
+      "Idempotency-Key": `ui-receipt-${suffix}`,
     },
-  );
+    data: {
+      purchase_order_id: order.id,
+      reference: `UI-GR-${suffix}`,
+      received_on: "2026-10-02",
+      lines: [{ purchase_order_line_id: "ITEM-1", quantity: "2" }],
+    },
+  });
   expect(receipt.status()).toBe(201);
   const login = await page.request.post(`${baseURL}/api/session`, {
     headers: { Origin: baseURL! },

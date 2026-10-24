@@ -2,7 +2,7 @@
 name = "reconcileiq-worker"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["celery>=5.6,<6", "reconcileiq-database", "reconcileiq-ai", "minio>=7.2,<8", "pypdf>=6.21.2,<7"]
+dependencies = ["reconcileiq-telemetry","celery>=5.6,<6", "reconcileiq-database", "reconcileiq-ai", "minio>=7.2,<8", "pypdf>=6.21.2,<7"]
 
 [build-system]
 requires = ["hatchling"]

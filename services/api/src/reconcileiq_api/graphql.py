@@ -1,4 +1,5 @@
 import json
+from collections.abc import Iterator
 from datetime import date, datetime
 from enum import StrEnum
 from typing import Any, NewType
@@ -6,6 +7,7 @@ from typing import Any, NewType
 import strawberry
 from fastapi.concurrency import run_in_threadpool
 from graphql import GraphQLError
+from opentelemetry.trace import StatusCode
 from reconcileiq_database.config import Settings
 from reconcileiq_database.models import (
     AuditEvent,
@@ -14,10 +16,16 @@ from reconcileiq_database.models import (
     PurchaseOrder,
     ReconciliationRun,
 )
+from reconcileiq_telemetry import metric, stage
 from sqlalchemy import Engine, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from strawberry.extensions import MaxAliasesLimiter, MaxTokensLimiter, QueryDepthLimiter
+from strawberry.extensions import (
+    MaxAliasesLimiter,
+    MaxTokensLimiter,
+    QueryDepthLimiter,
+    SchemaExtension,
+)
 from strawberry.fastapi import BaseContext
 from strawberry.schema.config import StrawberryConfig
 from strawberry.types import ExecutionContext, Info
@@ -563,6 +571,16 @@ class SafeSchema(strawberry.Schema):
                 )
 
 
+class TelemetryExtension(SchemaExtension):
+    def on_operation(self) -> Iterator[None]:
+        with stage("graphql.operation") as span:
+            yield
+            result = self.execution_context.result
+            if self.execution_context.pre_execution_errors or (result and result.errors):
+                span.set_status(StatusCode.ERROR)
+                metric("riq.graphql.errors")
+
+
 schema = SafeSchema(
     query=Query,
     config=StrawberryConfig(
@@ -571,6 +589,7 @@ schema = SafeSchema(
         }
     ),
     extensions=[
+        TelemetryExtension,
         lambda: QueryDepthLimiter(max_depth=10),
         lambda: MaxTokensLimiter(max_token_count=5000),
         lambda: MaxAliasesLimiter(max_alias_count=30),

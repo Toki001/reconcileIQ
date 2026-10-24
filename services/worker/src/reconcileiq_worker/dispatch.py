@@ -12,6 +12,7 @@ from kombu import Connection, Exchange, Producer, Queue
 from reconcileiq_database.config import Settings, get_settings
 from reconcileiq_database.models import Job, OutboxEvent
 from reconcileiq_database.session import build_engine
+from reconcileiq_telemetry import carrier, initialize, instrument, metric, parent, stage
 from sqlalchemy import Engine, or_, select
 from sqlalchemy.orm import Session
 
@@ -44,6 +45,7 @@ PROBE_QUEUE = Queue(
 Publish = Callable[[str, str, bool, dict[str, Any]], None]
 
 
+@instrument("messaging.publish")
 def publish(
     settings: Settings, org: str, job_id: str, terminal: bool, diagnostic: dict[str, Any]
 ) -> None:
@@ -87,6 +89,7 @@ def publish(
                 correlation_id=job_id,
                 headers={
                     "lang": "py",
+                    **carrier(),
                     "task": "reconcileiq.process_invoice",
                     "id": uuid4().hex,
                     "argsrepr": "<organization and job identifiers>",
@@ -97,6 +100,7 @@ def publish(
             )
 
 
+@instrument("outbox.recover")
 def recover(engine: Engine, settings: Settings) -> None:
     with Session(engine) as session, session.begin():
         bounded_session(session)
@@ -120,6 +124,7 @@ def recover(engine: Engine, settings: Settings) -> None:
             .with_for_update(of=Job, skip_locked=True)
         ).all()
         for job in jobs:
+            metric("riq.lease.recoveries", labels={"reason": "lease"})
             envelope = session.scalar(select(OutboxEvent).where(OutboxEvent.job_id == job.id))
             if envelope is None:
                 envelope = OutboxEvent(
@@ -138,6 +143,7 @@ def recover(engine: Engine, settings: Settings) -> None:
                 event(session, job, "unconsumed_dispatch_recovered")
 
 
+@instrument("outbox.dispatch")
 def dispatch_once(engine: Engine, settings: Settings, sender: Publish | None = None) -> int:
     recover(engine, settings)
     count = 0
@@ -168,6 +174,7 @@ def dispatch_once(engine: Engine, settings: Settings, sender: Publish | None = N
             envelope.lease_owner = token
             envelope.lease_expires_at = now() + timedelta(seconds=30)
             envelope.attempts += 1
+            original_context = parent(envelope.payload.get("telemetry"))
             org, job_id, terminal = job.organization_id, job.id, job.state == "failed"
             diagnostic = {
                 "error_code": job.error_code,
@@ -176,10 +183,21 @@ def dispatch_once(engine: Engine, settings: Settings, sender: Publish | None = N
                 "retryable": job.retryable,
             }
         try:
-            (
-                sender
-                or (lambda org, key, failed, detail: publish(settings, org, key, failed, detail))
-            )(org, job_id, terminal, diagnostic)
+            with stage(
+                "messaging.publish",
+                {
+                    "messaging.system": "rabbitmq",
+                    "messaging.operation.name": "publish",
+                    "messaging.destination.name": "terminal" if terminal else "invoice",
+                },
+                context=original_context,
+            ):
+                (
+                    sender
+                    or (
+                        lambda org, key, failed, detail: publish(settings, org, key, failed, detail)
+                    )
+                )(org, job_id, terminal, diagnostic)
         except Exception:
             # Publication is uncertain on connection loss. Re-publish after backoff;
             # durable execution keys suppress any duplicate result.
@@ -219,6 +237,8 @@ class RecoveryService(bootsteps.StartStopStep):  # type: ignore[misc]
     def start(self, worker: Any) -> None:
         if not get_settings().worker_enabled:
             return
+        initialize("reconcileiq-worker")
+        metric("riq.worker.starts")
         self.thread = threading.Thread(target=self.run, name="durable-outbox", daemon=True)
         self.thread.start()
 
@@ -228,6 +248,7 @@ class RecoveryService(bootsteps.StartStopStep):  # type: ignore[misc]
         topology_ready = False
         try:
             while not self.stop_event.is_set():
+                metric("riq.worker.heartbeat")
                 try:
                     if not topology_ready:
                         with Connection(

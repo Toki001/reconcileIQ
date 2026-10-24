@@ -2,7 +2,7 @@
 name = "reconcileiq-ai"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = [
+dependencies = ["reconcileiq-telemetry",
     "reconcileiq-reconciliation",
     "httpx>=0.28,<1",
     "google-auth>=2.43,<3",

@@ -24,6 +24,7 @@ from reconcileiq_database.models import (
     ReconciliationRun,
     StructuredRequest,
 )
+from reconcileiq_telemetry import instrument
 from sqlalchemy import Engine, func, select, text
 from sqlalchemy.orm import Session
 
@@ -203,6 +204,7 @@ def fail(session: Session, job: Job, error: ProcessingError, settings: Settings)
     event(session, job, "job_failed")
 
 
+@instrument("invoice.process")
 def process_job(
     engine: Engine,
     settings: Settings,
@@ -299,6 +301,7 @@ def process_job(
         )
 
 
+@instrument("invoice.failure")
 def finish_failure(
     engine: Engine, settings: Settings, org: str, job_id: str, token: str, error: ProcessingError
 ) -> None:
@@ -308,6 +311,7 @@ def finish_failure(
             fail(session, job, error, settings)
 
 
+@instrument("invoice.persist")
 def complete(
     engine: Engine, org: str, job_id: str, token: str, digest: str, content: DocumentText
 ) -> None:

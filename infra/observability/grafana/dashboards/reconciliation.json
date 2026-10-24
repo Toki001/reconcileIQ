@@ -1,0 +1,125 @@
+{
+  "uid": "riq-reconciliation",
+  "title": "ReconcileIQ \u2014 Reconciliation",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["reconcileiq", "local-synthetic"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Actual local collected metrics. No production or live Gemini quality measurements. Empty panels mean no observations.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Results",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(outcome)(riq_reconciliation_results)",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Discrepancy categories",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(category)(riq_reconciliation_discrepancies)",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Review backlog",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_review_backlog",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Matching p95",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(riq_stage_duration_seconds_bucket{stage=\"matching.reconcile\"}[5m])))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Validation failures",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_validation_failures",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    }
+  ]
+}

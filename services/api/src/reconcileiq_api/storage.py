@@ -8,6 +8,7 @@ from uuid import uuid4
 from minio import Minio
 from minio.error import S3Error
 from reconcileiq_database.config import Settings
+from reconcileiq_telemetry import instrument
 from urllib3 import PoolManager, Timeout
 
 from reconcileiq_api.errors import ApiError
@@ -42,6 +43,7 @@ class MinioStorage:
             http_client=PoolManager(timeout=Timeout(connect=3, read=10), retries=False),
         )
 
+    @instrument("storage.grant")
     def grant(self, key: str) -> str:
         try:
             client = self.client()
@@ -61,6 +63,7 @@ class MinioStorage:
                 503, "DEPENDENCY_UNAVAILABLE", "Object storage is unavailable."
             ) from None
 
+    @instrument("storage.read")
     def read_document(self, key: str, size: int, digest: str) -> bytes:
         try:
             if not 5 <= size <= 10_485_760:
@@ -79,6 +82,7 @@ class MinioStorage:
                 503, "DOCUMENT_UNAVAILABLE", "Retained PDF could not be verified."
             ) from None
 
+    @instrument("storage.write")
     def put_document(self, key: str, data: bytes) -> None:
         try:
             self.client().put_object(
@@ -91,6 +95,7 @@ class MinioStorage:
         except Exception:
             raise ApiError(503, "DEPENDENCY_UNAVAILABLE", "Object storage unavailable.") from None
 
+    @instrument("storage.seal")
     def verify_and_seal(self, key: str, organization_id: str, size: int, digest: str) -> str:
         try:
             client = self.client()

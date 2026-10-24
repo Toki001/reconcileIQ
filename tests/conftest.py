@@ -5,11 +5,29 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from reconcileiq_database.config import get_settings
+from reconcileiq_database.config import Settings, get_settings
 from reconcileiq_database.models import Credential
 from reconcileiq_database.session import build_engine
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
+
+
+@pytest.fixture(autouse=True)
+def dispose_test_api_pools(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    # Legacy helper clients sometimes issue requests without entering lifespan.
+    # Their API-owned pool is distinct from the finance_engine fixture's pool.
+    # Keep warnings strict and release those connections deterministically.
+    pools: list[Engine] = []
+
+    def tracked(settings: Settings) -> Engine:
+        database = build_engine(settings)
+        pools.append(database)
+        return database
+
+    monkeypatch.setattr("reconcileiq_api.main.build_engine", tracked)
+    yield
+    for database in pools:
+        database.dispose()
 
 
 @pytest.fixture

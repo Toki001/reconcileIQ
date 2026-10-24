@@ -78,7 +78,7 @@ def test_warm_shutdown_preserves_inflight_and_pending_across_image_replacement(
                         "--name",
                         container,
                         "--network",
-                        "reconcileiq_default",
+                        os.environ.get("RECONCILE_TEST_NETWORK", "reconcileiq_default"),
                         "--env-file",
                         str(env_file),
                         "--volume",
@@ -122,7 +122,9 @@ def test_warm_shutdown_preserves_inflight_and_pending_across_image_replacement(
                 producer.send_task(
                     "reliability.process", args=[second, "success"], queue=queue_name
                 )
-                worker = start("reconcileiq-python:local")
+                worker = start(
+                    os.environ.get("RECONCILE_TEST_PYTHON_IMAGE", "reconcileiq-python:local")
+                )
                 eventually(lambda: state(first, "running"))
                 stop()  # Real SIGTERM while the child is sleeping, not a mocked protocol.
                 assert state(first, "succeeded")

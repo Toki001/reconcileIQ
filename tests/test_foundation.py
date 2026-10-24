@@ -105,13 +105,44 @@ def test_unmigrated_database_is_unready_and_errors_do_not_leak() -> None:
         assert "sqlite" not in failure.text
 
 
+def test_postgres_fallback_honors_isolated_environment_after_sqlite_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reconcileiq_database.testing import local_postgres_url
+
+    path = tmp_path / "synthetic-test.env"
+    path.write_text(
+        "POSTGRES_USER=private_test\nPOSTGRES_PASSWORD=synthetic-only\n"
+        "POSTGRES_DB=isolated_test\nPOSTGRES_PORT=15432\n"
+    )
+    monkeypatch.setenv("RECONCILE_DATABASE_URL", "sqlite:///:memory:")
+    monkeypatch.setenv("RECONCILE_TEST_ENV_FILE", str(path))
+    monkeypatch.setenv("RECONCILE_TEST_POSTGRES_PORT", "25432")
+    get_settings.cache_clear()
+    try:
+        url = local_postgres_url()
+        assert (url.host, url.port, url.database, url.username) == (
+            "127.0.0.1",
+            25432,
+            "isolated_test",
+            "private_test",
+        )
+        assert url.password == "synthetic-only"
+    finally:
+        get_settings.cache_clear()
+
+
 def test_settings_redact_secrets_and_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     config = Settings(
         database_url=SecretStr("postgresql+psycopg://user:private-password@localhost/db")
     )
     assert "private-password" not in repr(config)
     with pytest.raises(ValidationError):
-        Settings(infrastructure_required=True)
+        Settings(
+            infrastructure_required=True,
+            database_url=SecretStr("sqlite:///:memory:"),
+            broker_url=SecretStr("memory://"),
+        )
     monkeypatch.setenv("RECONCILE_ENVIRONMENT", "production")
     with pytest.raises(ValidationError):
         Settings()

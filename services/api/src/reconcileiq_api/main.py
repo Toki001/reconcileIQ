@@ -1,3 +1,4 @@
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any, Literal
@@ -13,6 +14,8 @@ from reconcileiq_database.config import Settings, get_settings
 from reconcileiq_database.models import AuditEvent, Invoice, PurchaseOrder
 from reconcileiq_database.seed import SAMPLE_DATE
 from reconcileiq_database.session import build_engine
+from reconcileiq_telemetry import carrier, initialize, metric
+from reconcileiq_telemetry.integrations import api as instrument_api
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -69,6 +72,7 @@ def problem(
 
 
 def create_app(settings: Settings | None = None, storage: Storage | None = None) -> FastAPI:
+    initialize("reconcileiq-api")
     config = settings or get_settings()
     engine = build_engine(config)
 
@@ -150,32 +154,61 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
     app.openapi = contract_openapi  # type: ignore[method-assign]
     app.openapi_version = "3.1.0"
     app.state.engine, app.state.settings = engine, config
+    from reconcileiq_database.observability import gauges
+
+    gauges(engine)
+    from reconcileiq_api.observability import register
+
+    register(config, engine)
 
     @app.middleware("http")
     async def context_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
+        started = time.perf_counter()
         request.state.trace_id = uuid4().hex
-        if request.method in {"POST", "PATCH", "PUT"}:
-            binary_upload = (
-                request.method == "PUT"
-                and request.url.path.startswith("/v1/invoices/")
-                and request.url.path.endswith("/document")
+        status = 500
+        try:
+            if request.method in {"POST", "PATCH", "PUT"}:
+                binary_upload = (
+                    request.method == "PUT"
+                    and request.url.path.startswith("/v1/invoices/")
+                    and request.url.path.endswith("/document")
+                )
+                limit = 10_485_760 if binary_upload else 131_072
+                body = bytearray()
+                async for chunk in request.stream():
+                    body.extend(chunk)
+                    if len(body) > limit:
+                        status = 413
+                        return problem(
+                            request,
+                            ApiError(
+                                413, "VALIDATION_ERROR", "API request body exceeds the route limit."
+                            ),
+                        )
+                request._body = bytes(body)
+            response = await call_next(request)
+            status = response.status_code
+            response.headers["X-Request-Id"] = request.state.trace_id
+            response.headers["Cache-Control"] = "no-store"
+            if context := carrier():
+                response.headers["traceparent"] = context["traceparent"]
+            return response
+        finally:
+            labels = {
+                "http.route": getattr(request.scope.get("route"), "path", None),
+                "http.request.method": request.method,
+                "http.response.status_code": status,
+            }
+            metric("riq.http.requests", labels=labels)
+            metric(
+                "riq.http.duration",
+                time.perf_counter() - started,
+                labels,
+                kind="histogram",
+                unit="s",
             )
-            limit = 10_485_760 if binary_upload else 131_072
-            body = bytearray()
-            async for chunk in request.stream():
-                body.extend(chunk)
-                if len(body) > limit:
-                    return problem(
-                        request,
-                        ApiError(
-                            413, "VALIDATION_ERROR", "API request body exceeds the route limit."
-                        ),
-                    )
-            request._body = bytes(body)
-        response = await call_next(request)
-        response.headers["X-Request-Id"] = request.state.trace_id
-        response.headers["Cache-Control"] = "no-store"
-        return response
+            if status in {401, 403, 429}:
+                metric("riq.http.rejections", labels=labels)
 
     @app.exception_handler(ApiError)
     async def api_error(request: Request, exc: ApiError) -> JSONResponse:
@@ -265,6 +298,14 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
                     dependencies["minio"] = "ok" if response.status == 200 else "unavailable"
             except Exception:
                 dependencies["minio"] = "unavailable"
+        for dependency, state in dependencies.items():
+            metric(
+                "riq.dependency.checks",
+                labels={
+                    "dependency": dependency,
+                    "outcome": "ok" if state == "ok" else "unavailable",
+                },
+            )
         result = Health(
             status="unavailable" if "unavailable" in dependencies.values() else "ok",
             dependencies=dependencies,
@@ -372,6 +413,7 @@ def create_app(settings: Settings | None = None, storage: Storage | None = None)
     app.include_router(build_router(engine, config, storage or MinioStorage(config)))
     app.include_router(build_workflow_router(engine, config, storage or MinioStorage(config)))
     app.include_router(build_webhook_router(engine, config))
+    instrument_api(app)
     return app
 
 

@@ -1,0 +1,111 @@
+groups:
+  - name: reconcileiq
+    rules:
+      - alert: ReconcileIQApiErrors
+        expr: sum(rate(riq_http_requests_total{http_response_status_code=~"5.."}[5m])) / clamp_min(sum(rate(riq_http_requests_total[5m])),0.01) > 0.05
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "API error ratio exceeds 5%",
+            runbook_url: "docs/operations/incident-response.md#api-errors",
+          }
+      - alert: ReconcileIQApiLatency
+        expr: histogram_quantile(0.95,sum by(le)(rate(riq_http_duration_seconds_bucket[5m]))) > 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "API p95 exceeds one second",
+            runbook_url: "docs/operations/incident-response.md#api-latency",
+          }
+      - alert: ReconcileIQPendingAge
+        expr: riq_jobs_oldest_pending_age_seconds > 120
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Pending work older than two minutes",
+            runbook_url: "docs/operations/incident-response.md#queue-recovery",
+          }
+      - alert: ReconcileIQBacklog
+        expr: sum(max by(job_state)(riq_jobs{job_state=~"queued|pending_dispatch"})) > 50
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Queue backlog exceeds 50 jobs",
+            runbook_url: "docs/operations/incident-response.md#queue-recovery",
+          }
+      - alert: ReconcileIQDeadLetterGrowth
+        expr: increase(riq_jobs_completed_total{outcome="failed"}[10m]) > 5
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "More than five terminal failures in ten minutes",
+            runbook_url: "docs/operations/incident-response.md#terminal-failures",
+          }
+      - alert: ReconcileIQWorkerUnavailable
+        expr: (sum(increase(riq_worker_heartbeat_total[2m])) == 0 or absent(riq_worker_heartbeat_total)) and on() (up{job="reconcileiq"} == 1)
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "No worker heartbeat metrics",
+            runbook_url: "docs/operations/incident-response.md#worker-unavailable",
+          }
+      - alert: ReconcileIQDependencyFailures
+        expr: sum by(dependency)(increase(riq_dependency_failures_total[5m])) > 5
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Repeated dependency failures",
+            runbook_url: "docs/operations/incident-response.md#dependency-outage",
+          }
+      - alert: ReconcileIQProcessingDegraded
+        expr: sum(rate(riq_jobs_completed_total{outcome="failed"}[10m])) / clamp_min(sum(rate(riq_jobs_completed_total[10m])),0.01) > 0.1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Processing failure ratio exceeds 10%",
+            runbook_url: "docs/operations/incident-response.md#terminal-failures",
+          }
+      - alert: ReconcileIQProviderQuota
+        expr: increase(riq_provider_quota_total{provider_mode="live_free"}[10m]) > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Provider quota errors observed",
+            runbook_url: "docs/operations/incident-response.md#provider-unavailable",
+          }
+      - alert: ReconcileIQUnexpectedProviderCost
+        expr: increase(riq_provider_estimated_cost_USD_total{provider_mode="live_free"}[1h]) > 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          {
+            summary: "Nonzero estimated cost on free-only path",
+            runbook_url: "docs/operations/incident-response.md#unexpected-cost",
+          }
+      - alert: ReconcileIQStorageUnavailable
+        expr: max by(dependency)(riq_dependency_available{dependency=~"minio|database|rabbitmq"}) == 0
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Local dependency unavailable",
+            runbook_url: "docs/operations/incident-response.md#dependency-outage",
+          }
+      - alert: ReconcileIQTelemetryUnavailable
+        expr: up{job="reconcileiq"} == 0
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: "Collector metrics unavailable; inspect application health independently",
+            runbook_url: "docs/operations/incident-response.md#telemetry-outage",
+          }

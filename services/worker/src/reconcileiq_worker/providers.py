@@ -17,6 +17,7 @@ from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict, Field
 from pypdf import PdfReader, apply_configuration
 from reconcileiq_database.config import Settings
+from reconcileiq_telemetry import instrument
 from urllib3 import PoolManager, Timeout
 
 
@@ -87,6 +88,7 @@ class MinioReader:
             http_client=PoolManager(timeout=Timeout(connect=3, read=10), retries=False),
         )
 
+    @instrument("storage.read")
     def read(self, organization: str, key: str, size: int, digest: str) -> bytes:
         if not re.fullmatch(re.escape(organization) + r"/sealed/[a-f0-9]{32}\.pdf", key):
             raise ProcessingError("UNSAFE_OBJECT_REFERENCE")
@@ -115,6 +117,7 @@ class MinioReader:
 
 
 class DigitalPdfProvider:
+    @instrument("pdf.digital")
     def extract(self, data: bytes) -> DocumentText:
         logging.getLogger("pypdf").setLevel(logging.CRITICAL + 1)
         with apply_configuration(

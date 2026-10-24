@@ -1,0 +1,204 @@
+# Optional overlay; disabled application instrumentation unless explicitly enabled.
+services:
+  otel-collector:
+    profiles:
+      - observability
+    image: reconcileiq-otel:local
+    build:
+      context: .
+      dockerfile: infra/docker/observability.Dockerfile
+      args:
+        BASE_IMAGE: otel/opentelemetry-collector-contrib:0.163.2@sha256:7f22d2a6748110ffb6a59bc0df448bccbf501cdb667d610ede4c61d3863d5849
+        RUN_UID: "10001"
+    ports:
+      - 127.0.0.1:14318:4318
+    networks:
+      - default
+      - observability
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: "0.75"
+    pids_limit: 128
+    stop_grace_period: 15s
+    healthcheck:
+      test:
+        - CMD
+        - /healthcheck
+        - http://127.0.0.1:13133
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    command:
+      - --config=/etc/otelcol/config.yaml
+    volumes:
+      - ./infra/observability/collector.yaml:/etc/otelcol/config.yaml:ro
+  prometheus:
+    profiles:
+      - observability
+    image: reconcileiq-prometheus:local
+    build:
+      context: .
+      dockerfile: infra/docker/observability.Dockerfile
+      args:
+        BASE_IMAGE: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+        RUN_UID: "65534"
+    ports:
+      - 127.0.0.1:19090:9090
+    networks:
+      - default
+      - observability
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: "0.75"
+    pids_limit: 128
+    stop_grace_period: 15s
+    healthcheck:
+      test:
+        - CMD
+        - /healthcheck
+        - http://127.0.0.1:9090/-/ready
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=2h
+      - --storage.tsdb.retention.size=128MB
+    volumes:
+      - ./infra/observability/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./infra/observability/alerts.yaml:/etc/prometheus/alerts.yaml:ro
+      - prometheus-data:/prometheus
+  tempo:
+    profiles:
+      - observability
+    image: reconcileiq-tempo:local
+    build:
+      context: .
+      dockerfile: infra/docker/observability.Dockerfile
+      args:
+        BASE_IMAGE: grafana/tempo:3.1.1@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044
+        RUN_UID: "10001"
+    ports:
+      - 127.0.0.1:13200:3200
+    networks:
+      - default
+      - observability
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024m
+    cpus: "1.5"
+    pids_limit: 128
+    stop_grace_period: 15s
+    healthcheck:
+      test:
+        - CMD
+        - /healthcheck
+        - http://127.0.0.1:3200/ready
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    command:
+      - -config.file=/etc/tempo.yaml
+    volumes:
+      - ./infra/observability/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+  grafana:
+    profiles:
+      - observability
+    image: reconcileiq-grafana:local
+    build:
+      context: .
+      dockerfile: infra/docker/observability.Dockerfile
+      args:
+        BASE_IMAGE: grafana/grafana:13.2.4@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
+        RUN_UID: "472"
+    ports:
+      - 127.0.0.1:13000:3000
+    networks:
+      - default
+      - observability
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 384m
+    cpus: "0.75"
+    pids_limit: 128
+    stop_grace_period: 15s
+    healthcheck:
+      test:
+        - CMD
+        - /healthcheck
+        - http://127.0.0.1:3000/api/health
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    environment:
+      GF_SECURITY_ADMIN_USER: local-admin
+      GF_SECURITY_ADMIN_PASSWORD: ${RECONCILE_GRAFANA_PASSWORD:?Generate private observability credentials}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_PLUGINS_PLUGIN_ADMIN_ENABLED: "false"
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+  api:
+    networks:
+      - default
+      - observability
+    environment:
+      RECONCILE_TELEMETRY_ENABLED: ${RECONCILE_OBSERVABILITY_ACTIVE:-false}
+      RECONCILE_TELEMETRY_ENDPOINT: http://otel-collector:4318
+      RECONCILE_TELEMETRY_ENVIRONMENT: ${RECONCILE_TELEMETRY_ENVIRONMENT:-local}
+  worker:
+    networks:
+      - default
+      - observability
+    environment:
+      RECONCILE_TELEMETRY_ENABLED: ${RECONCILE_OBSERVABILITY_ACTIVE:-false}
+      RECONCILE_TELEMETRY_ENDPOINT: http://otel-collector:4318
+      RECONCILE_TELEMETRY_ENVIRONMENT: ${RECONCILE_TELEMETRY_ENVIRONMENT:-local}
+networks:
+  observability:
+    internal: true
+volumes:
+  tempo-data: {}
+  prometheus-data: {}
+  grafana-data: {}

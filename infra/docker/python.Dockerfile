@@ -10,6 +10,7 @@ COPY services/worker/pyproject.toml services/worker/pyproject.toml
 COPY packages/database/pyproject.toml packages/database/pyproject.toml
 COPY packages/reconciliation/pyproject.toml packages/reconciliation/pyproject.toml
 COPY packages/ai/pyproject.toml packages/ai/pyproject.toml
+COPY packages/telemetry/pyproject.toml packages/telemetry/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --all-packages --no-dev --no-install-workspace
 COPY services/ services/

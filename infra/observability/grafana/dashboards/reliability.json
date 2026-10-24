@@ -1,0 +1,147 @@
+{
+  "uid": "riq-reliability",
+  "title": "ReconcileIQ \u2014 Reliability",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["reconcileiq", "local-synthetic"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Actual local collected metrics. No production or live Gemini quality measurements. Empty panels mean no observations.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Failed jobs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_jobs{job_state=\"failed\"}",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Retry exhaustion",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_jobs_retry_exhausted",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Pending outbox",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "riq_outbox_pending",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Observed worker starts (1h)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max_over_time(riq_worker_starts_total[1h]))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Lease recovery",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(riq_lease_recoveries_total[5m])",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Dependency failures",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(dependency)(rate(riq_dependency_failures_total[5m]))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    }
+  ]
+}

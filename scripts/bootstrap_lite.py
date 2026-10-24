@@ -7,9 +7,11 @@ from pathlib import Path
 
 
 def main() -> None:
-    Path(".data").mkdir(exist_ok=True)
-    os.environ["RECONCILE_DATABASE_URL"] = "sqlite:///.data/reconcileiq.db"
+    database = Path(os.environ.get("RECONCILE_LITE_DATABASE_PATH", ".data/reconcileiq.db"))
+    database.parent.mkdir(parents=True, exist_ok=True)
+    os.environ["RECONCILE_DATABASE_URL"] = "sqlite:///" + str(database)
     os.environ["RECONCILE_INFRASTRUCTURE_REQUIRED"] = "false"
+    os.environ["RECONCILE_WORKER_ENABLED"] = "false"
     for command in (["alembic", "upgrade", "head"], ["reconcileiq_database.seed"]):
         subprocess.run([sys.executable, "-m", *command], check=True)
     from fastapi.testclient import TestClient

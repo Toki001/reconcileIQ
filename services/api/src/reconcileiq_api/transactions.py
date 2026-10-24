@@ -16,6 +16,7 @@ from reconcileiq_database.models import (
     OutboxEvent,
     utcnow,
 )
+from reconcileiq_telemetry import carrier, correlation
 from sqlalchemy import Engine, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -55,7 +56,10 @@ def new_job(
     invoice_id: str | None = None,
     replay_of: str | None = None,
 ) -> Job:
-    session.get(Organization, actor.organization_id, with_for_update=True)
+    # Serialize admissions without upgrading FK KEY SHARE locks held by concurrent
+    # invoice/idempotency inserts to conflicting FOR UPDATE locks. The key itself
+    # is never changed here; NO KEY UPDATE still excludes another admission lock.
+    session.get(Organization, actor.organization_id, with_for_update={"key_share": True})
     count = session.scalar(
         select(func.count())
         .select_from(Job)
@@ -73,12 +77,16 @@ def new_job(
         kind=kind,
         state="pending_dispatch",
         replay_of=replay_of,
+        trace_id=correlation(),
     )
     session.add(job)
     session.flush()
     session.add(
         OutboxEvent(
-            id=uuid4().hex, organization_id=actor.organization_id, job_id=job.id, payload=payload
+            id=uuid4().hex,
+            organization_id=actor.organization_id,
+            job_id=job.id,
+            payload={**payload, **({"telemetry": carrier()} if carrier() else {})},
         )
     )
     audit(

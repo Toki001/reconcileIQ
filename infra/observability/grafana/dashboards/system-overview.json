@@ -1,0 +1,125 @@
+{
+  "uid": "riq-system-overview",
+  "title": "ReconcileIQ \u2014 System Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["reconcileiq", "local-synthetic"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Actual local collected metrics. No production or live Gemini quality measurements. Empty panels mean no observations.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "API throughput",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(riq_http_requests_total[1m]))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "API error ratio",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(riq_http_requests_total{http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(riq_http_requests_total[5m])),0.01)",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "API p95 seconds",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(riq_http_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Worker heartbeats",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(riq_worker_heartbeat_total[1m])",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Dependency availability (database / broker / storage)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(dependency)(riq_dependency_available)",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    }
+  ]
+}

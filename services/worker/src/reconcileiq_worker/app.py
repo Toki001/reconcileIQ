@@ -1,8 +1,13 @@
 from celery import Celery
+from celery.signals import worker_process_init, worker_process_shutdown
 from reconcileiq_database.config import get_settings
+from reconcileiq_telemetry.integrations import worker_child, worker_shutdown
 
 from reconcileiq_worker import logging as safe_logging  # noqa: F401
 from reconcileiq_worker.dispatch import INVOICE_QUEUE, PROBE_QUEUE, RecoveryService
+
+worker_process_init.connect(worker_child, weak=False)
+worker_process_shutdown.connect(worker_shutdown, weak=False)
 
 celery_app = Celery("reconcileiq", broker=get_settings().broker_url.get_secret_value())
 celery_app.conf.update(

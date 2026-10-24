@@ -3,6 +3,7 @@ from sqlite3 import Connection
 
 from reconcileiq_reconciliation.accounting import exact_quantity, exact_rate, tax_minor
 from reconcileiq_reconciliation.money import line_total_minor
+from reconcileiq_telemetry.integrations import database as instrument_database
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
 
@@ -10,6 +11,9 @@ from reconcileiq_database.config import Settings
 
 
 def build_engine(settings: Settings) -> Engine:
+    from reconcileiq_database.observability import committed_metrics
+
+    committed_metrics()
     url = settings.database_url.get_secret_value()
     if make_url(url).get_backend_name() == "sqlite":
         engine = create_engine(url, connect_args={"check_same_thread": False}, pool_pre_ping=True)
@@ -42,5 +46,8 @@ def build_engine(settings: Settings) -> Engine:
                 deterministic=True,
             )
 
+        instrument_database(engine)
         return engine
-    return create_engine(url, connect_args={"connect_timeout": 3}, pool_pre_ping=True)
+    engine = create_engine(url, connect_args={"connect_timeout": 3}, pool_pre_ping=True)
+    instrument_database(engine)
+    return engine

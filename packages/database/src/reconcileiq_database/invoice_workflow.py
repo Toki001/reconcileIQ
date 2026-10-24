@@ -17,6 +17,7 @@ from reconcileiq_reconciliation.matching import (
     OrderLine,
     reconcile,
 )
+from reconcileiq_telemetry import instrument
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -99,6 +100,7 @@ def facts(candidate: InvoiceCandidate) -> InvoiceFacts | None:
     )
 
 
+@instrument("invoice.persist")
 def append_candidate(
     session: Session,
     invoice: Invoice,
@@ -318,6 +320,7 @@ def context_digest(context: dict[str, Any]) -> str:
     ).hexdigest()
 
 
+@instrument("matching.reconcile")
 def evaluate_candidate(
     candidate: InvoiceCandidate, context: dict[str, Any], policy: str
 ) -> MatchResult:
@@ -357,6 +360,7 @@ def evaluate_candidate(
     )
 
 
+@instrument("matching.persist")
 def persist_reconciliation(
     session: Session,
     invoice: Invoice,
@@ -427,6 +431,7 @@ def persist_reconciliation(
     return result
 
 
+@instrument("review.publish")
 def publish_review(
     session: Session, invoice: Invoice, source: ExtractionVersion, actor: str, confirmation_id: str
 ) -> ExtractionVersion:

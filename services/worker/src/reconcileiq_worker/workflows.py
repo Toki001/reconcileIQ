@@ -1,5 +1,6 @@
 """Structured extraction and matching on the existing fenced Celery job lifecycle."""
 
+import time
 from dataclasses import asdict
 from uuid import uuid4
 
@@ -30,6 +31,7 @@ from reconcileiq_database.models import (
     StructuredRequest,
 )
 from reconcileiq_database.provider_budget import release, reserve
+from reconcileiq_telemetry import metric, stage
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
@@ -101,8 +103,11 @@ def process_special(
     except ValueError:
         raise ProcessingError("AI_CONFIGURATION_INVALID") from None
     proof_data: dict[str, object] = {"mode": "injected-offline-test"}
+    provider_mode = "synthetic" if provider is not None else "live_free"
     result = None
+    started_provider = time.perf_counter()
     failure: ProviderFailure | None = None
+    invoked = False
     try:
         if provider is None:
             if not synthetic or settings.environment != "local":
@@ -117,7 +122,9 @@ def process_special(
             }
             lease = reserve(engine, ai, proof)
             provider = GeminiProvider(ai, proof, synthetic_authorized=synthetic)
-        result = provider.extract(pages)
+        invoked = True
+        with stage("provider.request", {"provider_mode": provider_mode}):
+            result = provider.extract(pages)
         if result.prompt_version != requested_prompt or result.model != requested_model:
             raise ProviderFailure("AI_RESPONSE_PROVENANCE_MISMATCH")
         # Future adapters and test providers must cross the same strict evidence boundary.
@@ -132,6 +139,35 @@ def process_special(
     except Exception:
         failure = ProviderFailure("AI_PROVIDER_UNAVAILABLE", True)
     finally:
+        if invoked:
+            metric(
+                "riq.provider.requests",
+                labels={"provider_mode": provider_mode, "outcome": "error" if failure else "ok"},
+            )
+            metric(
+                "riq.provider.duration",
+                time.perf_counter() - started_provider,
+                {"provider_mode": provider_mode},
+                kind="histogram",
+                unit="s",
+            )
+            if result:
+                metric(
+                    "riq.provider.input.tokens",
+                    result.input_tokens,
+                    {"provider_mode": provider_mode},
+                )
+                metric(
+                    "riq.provider.output.tokens",
+                    result.output_tokens,
+                    {"provider_mode": provider_mode},
+                )
+            if failure and failure.code in {"AI_QUOTA_EXHAUSTED", "AI_RATE_LIMITED"}:
+                metric("riq.provider.quota", labels={"provider_mode": provider_mode})
+            if failure and "TIMEOUT" in failure.code:
+                metric("riq.provider.timeouts", labels={"provider_mode": provider_mode})
+        if invoked and provider_mode == "synthetic":
+            metric("riq.provider.estimated_cost", 0, {"provider_mode": "synthetic"}, unit="USD")
         if lease:
             release(engine, ai.project_id, lease)
         if lease or provider is not None:

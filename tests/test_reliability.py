@@ -38,6 +38,49 @@ from test_api_contracts import headers, upload_body
 from test_processing import PDF, MemoryReader, admit, due
 
 
+def test_concurrent_distinct_admissions_preserve_capacity_without_fk_deadlock(
+    finance_engine: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reconcileiq_api.auth import Principal, Role
+    from reconcileiq_api.errors import ApiError
+    from reconcileiq_api.transactions import new_job
+
+    if finance_engine.dialect.name != "postgresql":
+        pytest.skip("PostgreSQL foreign-key row-lock compatibility regression")
+    monkeypatch.setenv("RECONCILE_ADMITTED_JOB_LIMIT", "2")
+    get_settings.cache_clear()
+    gate = Barrier(4)
+
+    def admit_distinct(index: int) -> int:
+        try:
+            with Session(finance_engine) as session, session.begin():
+                session.execute(text("SET LOCAL statement_timeout='10s'"))
+                session.add(
+                    IdempotencyRecord(
+                        organization_id="demo",
+                        key=f"parallel-admission-{index}",
+                        fingerprint="0" * 64,
+                        status_code=202,
+                        response={},
+                    )
+                )
+                # Each concurrent insert holds an FK KEY SHARE organization lock.
+                session.flush()
+                gate.wait(timeout=10)
+                new_job(session, Principal("demo", "test-admin", Role.ADMIN), "extraction", {})
+            return 202
+        except ApiError as error:
+            assert error.code == "ADMISSION_LIMIT"
+            return error.status
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        assert sorted(executor.map(admit_distinct, range(4))) == [202, 202, 429, 429]
+    with Session(finance_engine) as session:
+        for model in (Job, OutboxEvent, IdempotencyRecord):
+            assert session.scalar(select(func.count()).select_from(model)) == 2
+        assert session.scalar(select(func.count()).select_from(AuditEvent)) == 2
+
+
 def test_response_timeout_after_commit_replays_original_admission(finance_engine: Engine) -> None:
     import hashlib
 

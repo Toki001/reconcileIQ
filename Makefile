@@ -85,3 +85,28 @@ release-config:
 
 release-db-check:
 	$(UV) run --all-packages python scripts/verify_release_database.py
+
+.PHONY: benchmark-init observability-up observability-down benchmark-baseline benchmark-sustained benchmark-burst benchmark-faults observability-check
+benchmark-init:
+	$(UV) run --all-packages python scripts/benchmark_env.py init
+
+observability-up: benchmark-init
+	$(UV) run --all-packages python scripts/benchmark_env.py compose up -d --build --wait --wait-timeout 300
+
+observability-down:
+	$(UV) run --all-packages python scripts/benchmark_env.py compose down
+
+benchmark-baseline:
+	$(UV) run --all-packages python scripts/benchmark_env.py run python scripts/performance_benchmark.py baseline
+
+benchmark-sustained:
+	$(UV) run --all-packages python scripts/benchmark_env.py run python scripts/performance_benchmark.py sustained
+
+benchmark-burst:
+	$(UV) run --all-packages python scripts/benchmark_env.py run python scripts/performance_benchmark.py burst
+
+benchmark-faults:
+	$(UV) run --all-packages python scripts/benchmark_env.py run python scripts/performance_benchmark.py faults
+
+observability-check:
+	$(UV) run --all-packages python scripts/benchmark_env.py run python scripts/observability_smoke.py verify

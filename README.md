@@ -121,7 +121,7 @@ Invoice Review supports original PDF access, source evidence, immutable human co
 
 Gemini uses the official Python SDK and `gemini-3.5-flash-lite`, **disabled until independent project/key/billing/quota/model verification passes**. No project details were available for live testing. Manual corrections and local matching work offline. No paid fallback exists. Only labelled synthetic document hashes can use the Free Tier. Tesseract/Poppler are verified in the Linux image and OCR is opt-in; macOS host runtime is absent.
 
-See [extraction and correction workflow](docs/ai/extraction.md), [honest evaluation results](docs/ai/evaluation.md), [free-provider operations](docs/operations/ai-provider.md), and [milestone 06 verification](docs/verification/milestone-06.md). The 100 labelled PDF cases and 1,000 price-mismatch regressions validate offline behavior; live extraction accuracy, AI latency and cost remain unmeasured. Stop before Milestone 07 until it is explicitly requested.
+See [extraction and correction workflow](docs/ai/extraction.md), [honest evaluation results](docs/ai/evaluation.md), [free-provider operations](docs/operations/ai-provider.md), and [milestone 06 verification](docs/verification/milestone-06.md). The 100 labelled PDF cases and 1,000 price-mismatch regressions validate offline behavior; live extraction accuracy, AI latency and cost remain unmeasured.
 
 ## Release engineering
 
@@ -133,4 +133,22 @@ make release-config
 make release-db-check
 ```
 
-Read [deployment](docs/operations/deployment.md), [rollback and recovery](docs/operations/rollback.md), [CI/CD and GHCR setup](docs/operations/ci-cd.md), [production readiness](docs/security/production-readiness.md) and [actual Milestone 07 verification](docs/verification/milestone-07.md). Use `compose.release.yml` alone for private rehearsals; its default production mode fails closed. Milestone 08 is not started automatically.
+Read [deployment](docs/operations/deployment.md), [rollback and recovery](docs/operations/rollback.md), [CI/CD and GHCR setup](docs/operations/ci-cd.md), [production readiness](docs/security/production-readiness.md) and [actual Milestone 07 verification](docs/verification/milestone-07.md). Use `compose.release.yml` alone for private rehearsals; its default production mode fails closed.
+
+## Local observability and performance
+
+Milestone 08 local verification is complete. The optional Collector, Prometheus, Tempo and five Grafana dashboards use a separate local benchmark project with independent credentials, ports and volumes. Gemini remains disabled. See [observability](docs/operations/observability.md), [performance](docs/operations/performance.md), [alerting](docs/operations/alerting.md), [incident response](docs/operations/incident-response.md) and [actual verification status](docs/verification/milestone-08.md).
+
+```sh
+make benchmark-init        # private .cache/m08 credentials; preserves existing secrets
+make observability-up      # requires Docker; isolated project reconcileiq-m08
+make benchmark-baseline
+make benchmark-sustained   # six real digital PDF submissions over three minutes
+# Run scoped faults sequentially, without browser worker pauses:
+make benchmark-burst
+make benchmark-faults
+make observability-check
+make observability-down    # keeps volumes; never add --volumes
+```
+
+Measured before Docker became unavailable: **978 API requests with zero failed checks**; **six successful invoices over three minutes**, digital extraction end-to-end p95 **3.00 seconds**. This is a three-page synthetic digital PDF workload, with no OCR or AI. Docker recovery, actual exported trace ancestry, isolated fault recovery, seven browser checks and final full regressions passed: **488 Python tests / three expected SQLite skips**, **31 Jest tests**, and **100% accounting/matching statement and branch coverage**. Retained application records are unchanged. These measurements do not establish production readiness. Do not begin Milestone 09 automatically.

@@ -1,0 +1,147 @@
+{
+  "uid": "riq-invoice-processing",
+  "title": "ReconcileIQ \u2014 Invoice Processing",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["reconcileiq", "local-synthetic"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "description": "Actual local collected metrics. No production or live Gemini quality measurements. Empty panels mean no observations.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Throughput by outcome",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(outcome)(rate(riq_jobs_completed_total[1m]))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Backlog",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(job_state)(riq_jobs{job_state=~\"pending_dispatch|queued|running\"})",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Processing mean seconds",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(riq_stage_duration_seconds_sum{stage=\"invoice.process\"}[5m]))/clamp_min(sum(rate(riq_stage_duration_seconds_count{stage=\"invoice.process\"}[5m])),0.01)",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Processing p95",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(riq_stage_duration_seconds_bucket{stage=\"invoice.process\"}[5m])))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "OCR duration",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(riq_ocr_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Retries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(riq_jobs_retries_total[5m])",
+          "legendFormat": "{{outcome}} {{job_state}} {{provider_mode}} {{dependency}}"
+        }
+      ]
+    }
+  ]
+}

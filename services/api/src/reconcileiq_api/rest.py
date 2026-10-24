@@ -27,6 +27,7 @@ from reconcileiq_database.models import (
     StructuredRequest,
     utcnow,
 )
+from reconcileiq_telemetry import instrument
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
 
@@ -522,6 +523,7 @@ def build_router(engine: Engine, settings: Settings, storage: Storage) -> APIRou
             " or spending authorization."
         ),
     )
+    @instrument("review.decision")
     def review(
         invoice_id: str, body: ReviewCreate, actor: Actor, key: IdempotencyKey
     ) -> JSONResponse:

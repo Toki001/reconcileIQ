@@ -1,3 +1,4 @@
+import { apiUrl } from "./env";
 import { test, expect } from "@playwright/test";
 
 test("all finance pages read the running API and render real record details", async ({

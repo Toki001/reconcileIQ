@@ -5,12 +5,13 @@ requires-python = ">=3.12,<3.13"
 dependencies = []
 
 [tool.uv.workspace]
-members = ["services/api", "services/worker", "packages/database", "packages/reconciliation", "packages/ai"]
+members = ["services/api", "services/worker", "packages/database", "packages/reconciliation", "packages/ai", "packages/telemetry"]
 
 [tool.uv.sources]
 reconcileiq-database = { workspace = true }
 reconcileiq-reconciliation = { workspace = true }
 reconcileiq-ai = { workspace = true }
+reconcileiq-telemetry = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -37,7 +38,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["services", "packages/database/src", "packages/reconciliation/src", "packages/ai/src", "scripts", "tests"]
+files = ["services", "packages/database/src", "packages/reconciliation/src", "packages/ai/src", "packages/telemetry/src", "scripts", "tests"]
 exclude = ["migrations"]
 
 [[tool.mypy.overrides]]

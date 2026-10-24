@@ -1,0 +1,16 @@
+[project]
+name = "reconcileiq-telemetry"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "opentelemetry-api>=1.45,<1.46",
+    "opentelemetry-sdk>=1.45,<1.46",
+    "opentelemetry-exporter-otlp-proto-http>=1.45,<1.46",
+    "opentelemetry-instrumentation-fastapi>=0.66b1,<0.67",
+    "sqlalchemy>=2.0.44,<3",
+    "opentelemetry-instrumentation-celery>=0.66b1,<0.67",
+    "pydantic-settings>=2.11,<3",
+]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

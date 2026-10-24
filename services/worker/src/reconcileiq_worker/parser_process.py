@@ -1,10 +1,12 @@
 """Resource-bounded parser child. Never receives service credentials or document paths."""
 
 import json
+import resource
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 from reconcileiq_ai.sandbox import SandboxUnavailable, restrict
@@ -72,13 +74,24 @@ def main() -> None:
         data = sys.stdin.buffer.read(10_485_761)
         if not 5 <= len(data) <= 10_485_760 or not data.startswith(b"%PDF-"):
             raise ProcessingError("INVALID_PDF")
+        timings = {"digital_start_ns": time.time_ns()}
         try:
             content = DigitalPdfProvider().extract(data)
+            timings["digital_end_ns"] = time.time_ns()
         except ProcessingError as error:
             if error.code != "OCR_REQUIRED" or "--ocr" not in sys.argv:
                 raise
+            timings["digital_end_ns"] = time.time_ns()
+            timings["ocr_start_ns"] = time.time_ns()
             content = ocr(data)
-        print(json.dumps({"content": content.model_dump()}))
+            timings["ocr_end_ns"] = time.time_ns()
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        children = resource.getrusage(resource.RUSAGE_CHILDREN)
+        timings["cpu_milliseconds"] = int(
+            1000 * (usage.ru_utime + usage.ru_stime + children.ru_utime + children.ru_stime)
+        )
+        timings["peak_rss_bytes"] = int(max(usage.ru_maxrss, children.ru_maxrss)) * 1024
+        print(json.dumps({"content": content.model_dump(), "timings": timings}))
     except SandboxUnavailable:
         print(json.dumps({"error": "PARSER_SANDBOX_UNAVAILABLE"}))
     except ProcessingError as error:

@@ -1,3 +1,4 @@
+import { apiUrl, envFile } from "./env";
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -7,7 +8,7 @@ test.use({ trace: "off" });
 
 // Credentials stay in Playwright's Node process; never inject them into the page.
 function token(role: string) {
-  const line = readFileSync(".env", "utf8")
+  const line = readFileSync(envFile, "utf8")
     .split("\n")
     .find((value) =>
       value.startsWith(`RECONCILE_${role.toUpperCase()}_TOKEN=`),
@@ -44,7 +45,7 @@ test("API upload survives browser refresh, then real worker completion persists"
   const prefix = `m05-browser-${randomUUID()}`;
   const data = readFileSync("tests/fixtures/financial/invoice-0001.pdf");
   const auth = { Authorization: `Bearer ${token("reviewer")}` };
-  const root = "http://127.0.0.1:8000";
+  const root = apiUrl;
   service("pause");
   let workerPaused = true;
   try {
@@ -123,7 +124,7 @@ test("malformed digital PDF shows retained failure and denied auditor replay", a
   test.setTimeout(60000);
   const prefix = `m05-browser-bad-${randomUUID()}`;
   const data = Buffer.from("%PDF-1.4 synthetic malformed PDF");
-  const root = "http://127.0.0.1:8000";
+  const root = apiUrl;
   const auth = { Authorization: `Bearer ${token("reviewer")}` };
   const response = await request.post(`${root}/v1/invoices/upload-requests`, {
     headers: { ...auth, "Idempotency-Key": `${prefix}-reserve` },

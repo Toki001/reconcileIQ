@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -20,15 +21,20 @@ def main() -> None:
     settings = get_settings()
     assert settings.environment == "local"
     url = local_postgres_url()
-    assert url.host == "127.0.0.1" and url.port == 15432
+    assert url.host == "127.0.0.1" and url.port == int(
+        os.environ.get("RECONCILE_TEST_POSTGRES_PORT", "15432")
+    )
     engine = create_engine(url)
     prefix = "M06-" + uuid4().hex[:10]
     vendor = "Synthetic Workflow Supplies " + prefix
     reference = prefix + "-PO"
     api = httpx.Client(
-        base_url="http://127.0.0.1:8000",
+        base_url=os.environ.get("RECONCILE_TEST_API_URL", "http://127.0.0.1:8000"),
         timeout=15,
-        headers={"Authorization": "Bearer " + settings.admin_token.get_secret_value()},
+        headers={
+            "Authorization": "Bearer " + settings.admin_token.get_secret_value(),
+            "traceparent": "00-" + uuid4().hex + "-" + uuid4().hex[:16] + "-01",
+        },
     )
 
     def call(path: str, body: dict[str, Any] | None = None, key: str = "") -> dict[str, Any]:

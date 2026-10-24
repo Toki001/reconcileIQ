@@ -13,6 +13,7 @@ from google.genai import errors, types
 from httpx import TimeoutException
 from pydantic import Field, SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from reconcileiq_telemetry import instrument
 
 from reconcileiq_ai.invoice import InvoiceCandidate, validate_sources
 
@@ -106,6 +107,7 @@ def sdk_client(settings: AISettings) -> genai.Client:
     )
 
 
+@instrument("provider.verify")
 def verify_free_project(settings: AISettings) -> FreeProof:
     if not settings.enabled or not settings.api_key.get_secret_value() or not settings.project_id:
         raise ProviderFailure("AI_NOT_CONFIGURED")
@@ -215,6 +217,7 @@ class GeminiProvider:
         self.settings, self.proof = settings, proof
         self.synthetic_authorized = synthetic_authorized
 
+    @instrument("provider.request")
     def extract(self, pages: dict[int, str]) -> ExtractionResult:
         settings = self.settings
         if not self.synthetic_authorized:
